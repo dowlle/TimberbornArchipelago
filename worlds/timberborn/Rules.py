@@ -96,8 +96,22 @@ def _tier5(state: CollectionState, player: int) -> bool:
     """Endgame — bots, late metal, high science production."""
     return _tier4(state, player) and can_build_bots(state, player)
 
+
+def _tier_predicate(tier: int, state: CollectionState, player: int) -> bool:
+    """Dispatch to the correct tier check by number."""
+    if tier <= 1:
+        return _tier1(state, player)
+    if tier == 2:
+        return _tier2(state, player)
+    if tier == 3:
+        return _tier3(state, player)
+    if tier == 4:
+        return _tier4(state, player)
+    return _tier5(state, player)
+
+
 # ---------------------------------------------------------------------------
-# Per-location science costs mapped to tiers
+# Per-location science costs mapped to tiers (flat mode only)
 # (approximate — based on in-game SC values)
 # ---------------------------------------------------------------------------
 
@@ -247,12 +261,24 @@ TIER5_SCIENCE_LOCS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Rule setters
+# ---------------------------------------------------------------------------
+
 def set_rules(world: "TimberbornWorld") -> None:
-    player = world.multiworld.player_ids[world.player - 1] if hasattr(world.multiworld, 'player_ids') else world.player
     player = world.player
     mw = world.multiworld
 
-    # --- Science location rules ---
+    if world.options.shop_style.value == 1 and world.shop_layout:
+        _set_branching_rules(world, player, mw)
+    else:
+        _set_flat_rules(world, player, mw)
+
+    _set_completion_condition(world, player, mw)
+
+
+def _set_flat_rules(world, player, mw) -> None:
+    """Original 5-tier flat shop rules."""
     for loc in mw.get_locations(player):
         if loc.name in TIER1_SCIENCE_LOCS:
             loc.access_rule = lambda state, p=player: _tier1(state, p)
@@ -266,7 +292,59 @@ def set_rules(world: "TimberbornWorld") -> None:
             loc.access_rule = lambda state, p=player: _tier5(state, p)
         # Milestone locations have no access rules (triggered by gameplay events)
 
-    # --- Completion condition ---
+
+def _set_branching_rules(world, player, mw) -> None:
+    """Branching-path shop rules: sequential within each path + tier gates.
+
+    Sequential ordering uses event items placed at each location in
+    create_regions.  Location N in a path requires the event item from
+    location N-1 (``state.has("Event: <prev> Checked")``).
+    """
+    # Build lookup: path -> sorted list of (level, location_name)
+    path_levels: dict[str, list[tuple[int, str]]] = {}
+    for entry in world.shop_layout:
+        path = entry["path"]
+        if path not in path_levels:
+            path_levels[path] = []
+        path_levels[path].append((entry["level"], entry["location_name"]))
+
+    for path in path_levels:
+        path_levels[path].sort()
+
+    # Build a quick tier lookup: location_name -> tier
+    tier_lookup = {e["location_name"]: e["tier"] for e in world.shop_layout}
+
+    # Set access rules for each shop location and its event twin
+    for path, entries in path_levels.items():
+        for idx, (level, loc_name) in enumerate(entries):
+            loc = mw.get_location(loc_name, player)
+            tier = tier_lookup[loc_name]
+
+            if idx == 0:
+                rule = lambda state, p=player, t=tier: (
+                    _tier_predicate(t, state, p)
+                )
+            else:
+                prev_loc_name = entries[idx - 1][1]
+                prev_event = f"Event: {prev_loc_name} Checked"
+                rule = lambda state, p=player, t=tier, ev=prev_event: (
+                    _tier_predicate(t, state, p)
+                    and state.has(ev, p)
+                )
+
+            loc.access_rule = rule
+
+            # Event location (if it exists) gets the same access rule.
+            # Last location in each path has no event.
+            if idx < len(entries) - 1:
+                event_name = f"Event: {loc_name} Checked"
+                event_loc = mw.get_location(event_name, player)
+                event_loc.access_rule = rule
+
+    # Milestone locations have no access rules (unchanged)
+
+
+def _set_completion_condition(world, player, mw) -> None:
     goal = world.options.goal.value
     if goal == 0:  # complete_wonder
         mw.completion_condition[player] = lambda state: (

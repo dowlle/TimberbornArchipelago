@@ -7,11 +7,13 @@ from BaseClasses import Item, ItemClassification
 #   9_200_000 – 9_209_999 : Boost items
 #   9_210_000 – 9_219_999 : Filler items
 #   9_220_000 – 9_229_999 : Trap items
+#   9_230_000 – 9_239_999 : Skip items
 # ---------------------------------------------------------------------------
 FT_BLUEPRINT_BASE  = 9_000_000
 BOOST_BASE         = 9_200_000
 FILLER_BASE        = 9_210_000
 TRAP_BASE          = 9_220_000
+SKIP_BASE          = 9_230_000
 
 
 class TimberbornItem(Item):
@@ -309,6 +311,13 @@ for i, (name, classification, count) in enumerate(TRAP_ITEMS):
         "count": count,
         "id": TRAP_BASE + i,
     }
+
+# Skip — count determined at runtime by SkipCount option
+item_table["Skip"] = {
+    "classification": ItemClassification.useful,
+    "count": 0,
+    "id": SKIP_BASE,
+}
 
 item_name_to_id: dict[str, int] = {name: data["id"] for name, data in item_table.items()}
 
