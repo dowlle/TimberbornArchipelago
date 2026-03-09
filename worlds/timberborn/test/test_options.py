@@ -46,25 +46,11 @@ class TestNoTraps(TimberbornTestBase):
                          f"Found {len(trap_items)} trap items with traps disabled")
 
 
-class TestShopStyleFlat(TimberbornTestBase):
-    options = {"shop_style": 0}
+class TestShopLayout(TimberbornTestBase):
+    """Default generation always produces a branching shop layout."""
 
-    def test_slot_data_shop_style(self):
+    def test_slot_data_has_shop_layout(self):
         slot_data = self.world.fill_slot_data()
-        self.assertEqual(slot_data["shop_style"], 0)
-        self.assertNotIn("shop_layout", slot_data)
-
-    def test_no_shop_region(self):
-        region_names = {r.name for r in self.multiworld.regions}
-        self.assertNotIn("Shop", region_names)
-
-
-class TestShopStyleBranching(TimberbornTestBase):
-    options = {"shop_style": 1}
-
-    def test_slot_data_shop_style(self):
-        slot_data = self.world.fill_slot_data()
-        self.assertEqual(slot_data["shop_style"], 1)
         self.assertIn("shop_layout", slot_data)
 
     def test_shop_region_exists(self):
@@ -78,7 +64,7 @@ class TestShopStyleBranching(TimberbornTestBase):
 
 
 class TestMaxScienceCost(TimberbornTestBase):
-    options = {"shop_style": 1, "max_science_cost": 10000}
+    options = {"max_science_cost": 10000}
 
     def test_max_price_matches_option(self):
         max_price = max(e["price"] for e in self.world.shop_layout)

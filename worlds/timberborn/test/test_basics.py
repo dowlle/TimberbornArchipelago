@@ -6,7 +6,7 @@ from ..ShopLayout import BASE_SCIENCE, NUM_PATHS
 
 
 class TestDefaultGeneration(TimberbornTestBase):
-    """Default options (branching shop) should produce a valid world."""
+    """Default options should produce a valid world with branching shop."""
 
     def test_item_count_matches_location_count(self):
         item_count = len(self.multiworld.itempool)
@@ -55,32 +55,9 @@ class TestDefaultGeneration(TimberbornTestBase):
                           f"Blueprint '{bp_name}' has no matching science location")
 
 
-class TestFlatGeneration(TimberbornTestBase):
-    """Flat shop mode should still produce a valid world."""
-    options = {"shop_style": 0}
-
-    def test_item_count_matches_location_count(self):
-        item_count = len(self.multiworld.itempool)
-        location_count = len(self.multiworld.get_unfilled_locations(self.player))
-        self.assertEqual(item_count, location_count)
-
-    def test_all_science_locations_created(self):
-        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
-        for sci_loc in ALL_SCIENCE_LOCATIONS:
-            self.assertIn(sci_loc, loc_names)
-
-    def test_no_skip_items(self):
-        skip_items = [i for i in self.multiworld.itempool if i.name == "Skip"]
-        self.assertEqual(len(skip_items), 0, "Flat mode should not have Skip items")
-
-    def test_no_shop_layout_in_slot_data(self):
-        slot_data = self.world.fill_slot_data()
-        self.assertNotIn("shop_layout", slot_data)
-
-
 class TestBranchingGeneration(TimberbornTestBase):
-    """Branching shop mode should produce valid layout."""
-    options = {"shop_style": 1, "skip_count": 3}
+    """Branching shop should produce valid layout."""
+    options = {"skip_count": 3}
 
     def test_shop_layout_exists(self):
         self.assertIsNotNone(self.world.shop_layout)
@@ -138,7 +115,7 @@ class TestBranchingGeneration(TimberbornTestBase):
 
 
 class TestSkipCountZero(TimberbornTestBase):
-    options = {"shop_style": 1, "skip_count": 0}
+    options = {"skip_count": 0}
 
     def test_no_skip_items(self):
         skip_items = [i for i in self.multiworld.itempool if i.name == "Skip"]

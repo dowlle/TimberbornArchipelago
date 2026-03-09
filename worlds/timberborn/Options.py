@@ -61,20 +61,8 @@ class IncludeTraps(Toggle):
     default = 1
 
 
-class ShopStyle(Choice):
-    """
-    How the AP shop is structured.
-    - flat: Traditional 5-tier list where all locations in a tier are available at once.
-    - branching: 4 parallel paths with escalating science costs and sequential purchases.
-    """
-    display_name = "Shop Style"
-    option_flat = 0
-    option_branching = 1
-    default = 1
-
-
 class MaxScienceCost(Range):
-    """Maximum science cost for the most expensive shop location (branching mode only)."""
+    """Maximum science cost for the most expensive shop location."""
     display_name = "Max Science Cost"
     range_start = 1000
     range_end = 20000
@@ -97,6 +85,5 @@ class TimberbornOptions(PerGameCommonOptions):
     survival_cycles_goal: SurvivalCyclesGoal
     drought_difficulty: DroughtDifficulty
     include_traps: IncludeTraps
-    shop_style: ShopStyle
     max_science_cost: MaxScienceCost
     skip_count: SkipCount
