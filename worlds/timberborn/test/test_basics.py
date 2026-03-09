@@ -1,7 +1,7 @@
 from . import TimberbornTestBase
 from ..Items import BLUEPRINT_ITEMS, item_name_to_id, ALL_FT_BLUEPRINTS
 from ..Locations import (ALL_SCIENCE_LOCATIONS, ALL_MILESTONE_LOCATIONS,
-                         location_name_to_id)
+                         ALL_BUILDING_NAMES, location_name_to_id)
 from ..ShopLayout import BASE_SCIENCE, NUM_PATHS
 
 
@@ -20,12 +20,14 @@ class TestDefaultGeneration(TimberbornTestBase):
             self.assertIn(bp_name, pool_names, f"Missing blueprint item: {bp_name}")
 
     def test_correct_blueprint_count(self):
-        self.assertEqual(len(ALL_FT_BLUEPRINTS), 125, "Expected 125 Folktails blueprints")
+        self.assertEqual(len(ALL_FT_BLUEPRINTS), 126, "Expected 126 Folktails blueprints")
 
-    def test_all_science_locations_created(self):
+    def test_all_shop_locations_created(self):
+        """Every shop layout entry should map to a created location."""
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
-        for sci_loc in ALL_SCIENCE_LOCATIONS:
-            self.assertIn(sci_loc, loc_names, f"Missing science location: {sci_loc}")
+        for entry in self.world.shop_layout:
+            self.assertIn(entry["location_name"], loc_names,
+                          f"Missing shop location: {entry['location_name']}")
 
     def test_all_milestone_locations_created(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
@@ -33,10 +35,13 @@ class TestDefaultGeneration(TimberbornTestBase):
             self.assertIn(ms_loc, loc_names, f"Missing milestone location: {ms_loc}")
 
     def test_total_location_count(self):
-        self.assertEqual(len(ALL_SCIENCE_LOCATIONS), 125)
-        self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 16)
+        self.assertEqual(len(ALL_BUILDING_NAMES), 126)
+        self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 18)
+        # Total pre-allocated shop slots + milestones
         total = len(location_name_to_id)
-        self.assertEqual(total, 141, f"Expected 141 total locations, got {total}")
+        expected_slots = 4 * 40  # NUM_PATHS * SLOTS_PER_PATH
+        self.assertEqual(total, expected_slots + 18,
+                         f"Expected {expected_slots + 18} total location IDs, got {total}")
 
     def test_no_duplicate_item_ids(self):
         ids = list(item_name_to_id.values())
@@ -46,13 +51,12 @@ class TestDefaultGeneration(TimberbornTestBase):
         ids = list(location_name_to_id.values())
         self.assertEqual(len(ids), len(set(ids)), "Duplicate location IDs found")
 
-    def test_item_location_name_correspondence(self):
-        """Every blueprint item 'Blueprint: X' should have a matching 'Science: X' location."""
-        for bp_name in BLUEPRINT_ITEMS:
-            building = bp_name.replace("Blueprint: ", "")
-            sci_name = f"Science: {building}"
-            self.assertIn(sci_name, location_name_to_id,
-                          f"Blueprint '{bp_name}' has no matching science location")
+    def test_building_to_blueprint_correspondence(self):
+        """Every building name should have a matching 'Blueprint: X' item."""
+        for building in ALL_BUILDING_NAMES:
+            bp_name = f"Blueprint: {building}"
+            self.assertIn(bp_name, item_name_to_id,
+                          f"Building '{building}' has no matching blueprint item")
 
 
 class TestBranchingGeneration(TimberbornTestBase):
@@ -61,12 +65,12 @@ class TestBranchingGeneration(TimberbornTestBase):
 
     def test_shop_layout_exists(self):
         self.assertIsNotNone(self.world.shop_layout)
-        self.assertEqual(len(self.world.shop_layout), 125)
+        self.assertEqual(len(self.world.shop_layout), 126)
 
     def test_shop_layout_in_slot_data(self):
         slot_data = self.world.fill_slot_data()
         self.assertIn("shop_layout", slot_data)
-        self.assertEqual(len(slot_data["shop_layout"]), 125)
+        self.assertEqual(len(slot_data["shop_layout"]), 126)
 
     def test_shop_layout_has_4_paths(self):
         paths = {e["path"] for e in self.world.shop_layout}
@@ -102,16 +106,23 @@ class TestBranchingGeneration(TimberbornTestBase):
         skip_items = [i for i in self.multiworld.itempool if i.name == "Skip"]
         self.assertEqual(len(skip_items), 3)
 
-    def test_slot_data_no_location_names(self):
-        """slot_data shop_layout should NOT contain location names (abstract paths only)."""
+    def test_slot_data_has_building_names(self):
+        """slot_data shop_layout should contain building_name for client display."""
         slot_data = self.world.fill_slot_data()
         for entry in slot_data["shop_layout"]:
-            self.assertNotIn("location_name", entry)
+            self.assertIn("building_name", entry)
             self.assertIn("location_id", entry)
             self.assertIn("path", entry)
             self.assertIn("level", entry)
             self.assertIn("price", entry)
             self.assertIn("tier", entry)
+
+    def test_location_names_are_shop_format(self):
+        """Location names should be in 'Shop: X-NN' format."""
+        for entry in self.world.shop_layout:
+            loc_name = entry["location_name"]
+            self.assertRegex(loc_name, r"^Shop: [A-D]-\d{2}$",
+                             f"Location name '{loc_name}' not in Shop format")
 
 
 class TestSkipCountZero(TimberbornTestBase):

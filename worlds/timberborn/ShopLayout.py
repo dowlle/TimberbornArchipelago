@@ -1,12 +1,16 @@
 """
 Generates the branching-path shop layout at world creation time.
 
-The shop has NUM_PATHS parallel abstract paths (A, B, C, D).  Locations are
+The shop has NUM_PATHS parallel abstract paths (A, B, C, D).  Buildings are
 shuffled and dealt round-robin into paths, then priced on an exponential ramp
 from BASE_SCIENCE to the player's configured max.  The exponential curve keeps
 early items cheap (matching vanilla T1 science costs) while ramping steeply
 toward endgame.  Tier gates are applied by mapping level ranges to the
 existing 5-tier system from Rules.py.
+
+Location names use the fixed "Shop: X-NN" slot format (e.g. "Shop: A-01")
+so IDs are stable across seeds.  Each entry also carries a ``building_name``
+for the client to display.
 """
 from __future__ import annotations
 
@@ -42,57 +46,63 @@ def get_tier_for_level(level: int) -> int:
 
 def generate_shop_layout(
     world: TimberbornWorld,
-    science_locations: list[str],
+    building_names: list[str],
     max_science: int,
 ) -> list[dict]:
     """
-    Shuffle *science_locations* into branching paths and assign prices.
+    Shuffle *building_names* into branching paths and assign prices.
 
     Returns a list of dicts, one per location::
 
         {
             "path": "A",            # path label
-            "level": 3,             # position within path (0-based)
-            "location_name": "Science: Forester",
+            "level": 3,             # position within path (0-based internally)
+            "slot": 4,              # 1-based slot number (for "Shop: A-04")
+            "location_name": "Shop: A-04",
+            "building_name": "Forester",
             "price": 142,           # science cost
             "tier": 1,              # tier gate (1-5)
             "global_pos": 12,       # interleaved ordering across all paths
         }
     """
-    shuffled = list(science_locations)
+    shuffled = list(building_names)
     world.random.shuffle(shuffled)
 
     # Pin critical survival buildings to the front so they always land in T1
-    PRIORITY_LOCATIONS = ["Science: Forester"]
-    for loc in reversed(PRIORITY_LOCATIONS):
-        if loc in shuffled:
-            shuffled.remove(loc)
-            shuffled.insert(0, loc)
+    PRIORITY_BUILDINGS = ["Forester"]
+    for bld in reversed(PRIORITY_BUILDINGS):
+        if bld in shuffled:
+            shuffled.remove(bld)
+            shuffled.insert(0, bld)
 
     # Deal round-robin into paths
     paths: list[list[str]] = [[] for _ in range(NUM_PATHS)]
-    for i, loc_name in enumerate(shuffled):
-        paths[i % NUM_PATHS].append(loc_name)
+    for i, building in enumerate(shuffled):
+        paths[i % NUM_PATHS].append(building)
 
     # Build layout with interleaved global positions (level-by-level)
     layout: list[dict] = []
     max_level = max(len(p) for p in paths)
-    n = len(science_locations)
+    n = len(building_names)
     global_pos = 0
 
     for level in range(max_level):
         for path_idx in range(NUM_PATHS):
             if level >= len(paths[path_idx]):
                 continue
-            loc_name = paths[path_idx][level]
+            building = paths[path_idx][level]
             t = global_pos / max(n - 1, 1)
             ratio = max_science / BASE_SCIENCE
             price = round(BASE_SCIENCE * (ratio ** t))
             tier = get_tier_for_level(level)
+            slot = level + 1  # 1-based slot number
+            loc_name = f"Shop: {PATH_LABELS[path_idx]}-{slot:02d}"
             layout.append({
                 "path": PATH_LABELS[path_idx],
                 "level": level,
+                "slot": slot,
                 "location_name": loc_name,
+                "building_name": building,
                 "price": price,
                 "tier": tier,
                 "global_pos": global_pos,

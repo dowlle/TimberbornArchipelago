@@ -169,14 +169,46 @@ def _set_branching_rules(world, player, mw) -> None:
                 event_loc = mw.get_location(event_name, player)
                 event_loc.access_rule = rule
 
-    # Milestone locations have no access rules (unchanged)
+    # Milestone access rules — tier gates based on realistic progression
+    _set_milestone_rules(player, mw)
+
+
+def _set_milestone_rules(player, mw) -> None:
+    """Gate milestones by tier so they appear in proper logic spheres."""
+    MILESTONE_TIERS: dict[str, int] = {
+        # Population
+        "Population: First Beaver Born":    1,
+        "Population: First Beaver Grown Up": 1,
+        "Population: Reach 10 Beavers":     1,
+        "Population: Reach 25 Beavers":     2,
+        "Population: Reach 50 Beavers":     2,
+        "Population: Reach 100 Beavers":    3,
+        "Population: Reach 200 Beavers":    4,
+        # Well-being
+        "Well-being: Reach Level 5":        1,
+        "Well-being: Reach Level 10":       2,
+        "Well-being: Reach Level 15":       3,
+        "Well-being: Reach Level 20":       4,
+        # Survival
+        "Survival: Survive 1st Drought":    1,
+        "Survival: Survive 5 Droughts":     2,
+        "Survival: Survive 10 Droughts":    3,
+        "Survival: Survive 1st Badtide":    2,
+        "Survival: Survive 5 Badtides":     3,
+        "Survival: Survive 10 Badtides":    4,
+        # Wonder
+        "Wonder: Complete Earth Recultivator": 5,
+    }
+    for loc_name, tier in MILESTONE_TIERS.items():
+        loc = mw.get_location(loc_name, player)
+        loc.access_rule = lambda state, p=player, t=tier: _tier_predicate(t, state, p)
 
 
 def _set_completion_condition(world, player, mw) -> None:
     goal = world.options.goal.value
     if goal == 0:  # complete_wonder
         mw.completion_condition[player] = lambda state: (
-            state.can_reach("Wonder: Complete Earth Recultivator", "Location", player)
+            _tier5(state, player)
         )
     else:
         # reach_population / survive_cycles: client sends a Victory item when done

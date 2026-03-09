@@ -3,7 +3,7 @@ from BaseClasses import Region, Location, Item, ItemClassification, Tutorial
 from .Items import (TimberbornItem, item_table, item_name_to_id,
                     BLUEPRINT_ITEMS, FILLER_ITEMS, TRAP_ITEMS, BOOSTS)
 from .Locations import (TimberbornLocation, location_table, location_name_to_id,
-                        ALL_SCIENCE_LOCATIONS, ALL_MILESTONE_LOCATIONS)
+                        ALL_BUILDING_NAMES, ALL_MILESTONE_LOCATIONS)
 from .Options import TimberbornOptions
 from .Rules import set_rules
 
@@ -59,7 +59,7 @@ class TimberbornWorld(World):
         # Branching shop — 4 paths with sequential ordering
         self.shop_layout = generate_shop_layout(
             self,
-            list(ALL_SCIENCE_LOCATIONS),
+            list(ALL_BUILDING_NAMES),
             self.options.max_science_cost.value,
         )
         shop_region = Region("Shop", self.player, self.multiworld)
@@ -163,6 +163,7 @@ class TimberbornWorld(World):
                     "price": e["price"],
                     "tier": e["tier"],
                     "location_id": location_name_to_id[e["location_name"]],
+                    "building_name": e["building_name"],
                 }
                 for e in self.shop_layout
             ],

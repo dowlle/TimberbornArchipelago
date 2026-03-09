@@ -68,6 +68,7 @@ STORAGE_BLUEPRINTS = [
 # --- WATER ---
 WATER_BLUEPRINTS = [
     ("Badwater Pump",               ItemClassification.useful),       # 250
+    ("Fill Valve",                  ItemClassification.useful),       # 300
     ("Fluid Dump",                  ItemClassification.useful),       # 250
     ("Large Water Pump",            ItemClassification.progression),  # 400
     ("Aquifer Drill",               ItemClassification.useful),       # 400
