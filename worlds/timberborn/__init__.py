@@ -3,9 +3,38 @@ from BaseClasses import Region, Location, Item, ItemClassification, Tutorial
 from .Items import (TimberbornItem, item_table, item_name_to_id,
                     BLUEPRINT_ITEMS, FILLER_ITEMS, TRAP_ITEMS, BOOSTS)
 from .Locations import (TimberbornLocation, location_table, location_name_to_id,
-                        ALL_BUILDING_NAMES, ALL_MILESTONE_LOCATIONS)
+                        ALL_BUILDING_NAMES,
+                        POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
+                        SURVIVAL_LOCATIONS, WONDER_LOCATIONS)
 from .Options import TimberbornOptions
 from .Rules import set_rules
+
+
+import re
+
+
+def _milestone_type(name: str) -> str:
+    if name.startswith("Population:"):
+        return "population"
+    elif name.startswith("Well-being:"):
+        return "wellbeing"
+    elif name.startswith("Survival:"):
+        return "survival"
+    elif name.startswith("Wonder:"):
+        return "wonder"
+    return "unknown"
+
+
+def _milestone_threshold(name: str) -> int:
+    """Extract numeric threshold from milestone name (e.g. 'Reach 10 Beavers' -> 10)."""
+    if "First Beaver Born" in name:
+        return 1
+    if "First Beaver Grown Up" in name:
+        return 1
+    if "Complete" in name:
+        return 1
+    m = re.search(r"(\d+)", name)
+    return int(m.group(1)) if m else 0
 
 
 class TimberbornWebWorld(WebWorld):
@@ -36,8 +65,9 @@ class TimberbornWorld(World):
     item_name_to_id = item_name_to_id
     location_name_to_id = location_name_to_id
 
-    # Set during create_regions — branching shop layout
+    # Set during create_regions
     shop_layout: list[dict] | None = None
+    active_milestones: list[str] | None = None
 
     def create_regions(self) -> None:
         from .ShopLayout import generate_shop_layout
@@ -50,7 +80,19 @@ class TimberbornWorld(World):
         self.multiworld.regions.append(game_region)
         menu.connect(game_region)
 
-        for loc_name in ALL_MILESTONE_LOCATIONS:
+        # Build active milestone list based on options
+        self.active_milestones = []
+        if self.options.include_population_milestones:
+            self.active_milestones.extend(POPULATION_LOCATIONS)
+        if self.options.include_wellbeing_milestones:
+            self.active_milestones.extend(WELLBEING_LOCATIONS)
+        if self.options.include_survival_milestones:
+            self.active_milestones.extend(SURVIVAL_LOCATIONS)
+        # Force-enable Wonder milestone if goal requires it
+        if self.options.include_wonder_milestone or self.options.goal.value == 0:
+            self.active_milestones.extend(WONDER_LOCATIONS)
+
+        for loc_name in self.active_milestones:
             loc_id = location_name_to_id[loc_name]
             game_region.locations.append(
                 TimberbornLocation(self.player, loc_name, loc_id, game_region)
@@ -106,8 +148,13 @@ class TimberbornWorld(World):
             self.multiworld.itempool.append(self.create_item(item_name))
             items_created += 1
 
+        # Forester must be available from sphere 1 for sustainable wood
+        self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
+
         # --- Boost items ---
         for name, classification in BOOSTS:
+            if items_created >= unfilled:
+                break
             self.multiworld.itempool.append(self.create_item(name))
             items_created += 1
 
@@ -166,6 +213,15 @@ class TimberbornWorld(World):
                     "building_name": e["building_name"],
                 }
                 for e in self.shop_layout
+            ],
+            "milestones": [
+                {
+                    "name": loc_name,
+                    "location_id": location_name_to_id[loc_name],
+                    "type": _milestone_type(loc_name),
+                    "threshold": _milestone_threshold(loc_name),
+                }
+                for loc_name in self.active_milestones
             ],
         }
         return data

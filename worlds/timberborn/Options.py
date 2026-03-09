@@ -77,6 +77,30 @@ class SkipCount(Range):
     default = 3
 
 
+class IncludePopulationMilestones(Toggle):
+    """Include population milestone locations (beaver count thresholds, first born/grown)."""
+    display_name = "Include Population Milestones"
+    default = 1
+
+
+class IncludeWellbeingMilestones(Toggle):
+    """Include well-being milestone locations (well-being level thresholds)."""
+    display_name = "Include Well-being Milestones"
+    default = 1
+
+
+class IncludeSurvivalMilestones(Toggle):
+    """Include drought and badtide survival milestone locations."""
+    display_name = "Include Survival Milestones"
+    default = 1
+
+
+class IncludeWonderMilestone(Toggle):
+    """Include the Wonder completion milestone location."""
+    display_name = "Include Wonder Milestone"
+    default = 1
+
+
 @dataclass
 class TimberbornOptions(PerGameCommonOptions):
     goal: Goal
@@ -87,3 +111,7 @@ class TimberbornOptions(PerGameCommonOptions):
     include_traps: IncludeTraps
     max_science_cost: MaxScienceCost
     skip_count: SkipCount
+    include_population_milestones: IncludePopulationMilestones
+    include_wellbeing_milestones: IncludeWellbeingMilestones
+    include_survival_milestones: IncludeSurvivalMilestones
+    include_wonder_milestone: IncludeWonderMilestone

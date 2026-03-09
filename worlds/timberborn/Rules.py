@@ -27,7 +27,12 @@ def can_produce_planks(state: CollectionState, player: int) -> bool:
     return True
 
 def can_produce_gears(state: CollectionState, player: int) -> bool:
-    return has(state, player, "Gear Workshop")
+    """Gear Workshop needs sustainable wood supply (Forester)."""
+    return has(state, player, "Gear Workshop") and can_replant_trees(state, player)
+
+def can_replant_trees(state: CollectionState, player: int) -> bool:
+    """Forester is required for sustainable wood — must arrive before T2."""
+    return has(state, player, "Forester")
 
 def can_produce_paper(state: CollectionState, player: int) -> bool:
     return has(state, player, "Paper Mill") and can_produce_gears(state, player)
@@ -81,7 +86,7 @@ def _tier1(state: CollectionState, player: int) -> bool:
     return True
 
 def _tier2(state: CollectionState, player: int) -> bool:
-    """Wood processing tier — requires Gear Workshop."""
+    """Wood processing tier — requires Gear Workshop (which needs sustainable wood)."""
     return can_produce_gears(state, player)
 
 def _tier3(state: CollectionState, player: int) -> bool:
@@ -158,6 +163,7 @@ def _set_branching_rules(world, player, mw) -> None:
                 rule = lambda state, p=player, t=tier, ev=prev_event: (
                     _tier_predicate(t, state, p)
                     and state.has(ev, p)
+                    and can_replant_trees(state, p)
                 )
 
             loc.access_rule = rule
@@ -169,37 +175,41 @@ def _set_branching_rules(world, player, mw) -> None:
                 event_loc = mw.get_location(event_name, player)
                 event_loc.access_rule = rule
 
-    # Milestone access rules — tier gates based on realistic progression
-    _set_milestone_rules(player, mw)
+    # Milestone access rules — only for active milestones
+    _set_milestone_rules(world, player, mw)
 
 
-def _set_milestone_rules(player, mw) -> None:
+# Maps milestone location names to their logic tier (1-5).
+MILESTONE_TIERS: dict[str, int] = {
+    # Population
+    "Population: First Beaver Born":    1,
+    "Population: First Beaver Grown Up": 1,
+    "Population: Reach 10 Beavers":     1,
+    "Population: Reach 25 Beavers":     2,
+    "Population: Reach 50 Beavers":     2,
+    "Population: Reach 100 Beavers":    3,
+    "Population: Reach 200 Beavers":    4,
+    # Well-being
+    "Well-being: Reach Level 5":        1,
+    "Well-being: Reach Level 10":       2,
+    "Well-being: Reach Level 15":       3,
+    "Well-being: Reach Level 20":       4,
+    # Survival
+    "Survival: Survive 1st Drought":    1,
+    "Survival: Survive 5 Droughts":     2,
+    "Survival: Survive 10 Droughts":    3,
+    "Survival: Survive 1st Badtide":    2,
+    "Survival: Survive 5 Badtides":     3,
+    "Survival: Survive 10 Badtides":    4,
+    # Wonder
+    "Wonder: Complete Earth Recultivator": 5,
+}
+
+
+def _set_milestone_rules(world, player, mw) -> None:
     """Gate milestones by tier so they appear in proper logic spheres."""
-    MILESTONE_TIERS: dict[str, int] = {
-        # Population
-        "Population: First Beaver Born":    1,
-        "Population: First Beaver Grown Up": 1,
-        "Population: Reach 10 Beavers":     1,
-        "Population: Reach 25 Beavers":     2,
-        "Population: Reach 50 Beavers":     2,
-        "Population: Reach 100 Beavers":    3,
-        "Population: Reach 200 Beavers":    4,
-        # Well-being
-        "Well-being: Reach Level 5":        1,
-        "Well-being: Reach Level 10":       2,
-        "Well-being: Reach Level 15":       3,
-        "Well-being: Reach Level 20":       4,
-        # Survival
-        "Survival: Survive 1st Drought":    1,
-        "Survival: Survive 5 Droughts":     2,
-        "Survival: Survive 10 Droughts":    3,
-        "Survival: Survive 1st Badtide":    2,
-        "Survival: Survive 5 Badtides":     3,
-        "Survival: Survive 10 Badtides":    4,
-        # Wonder
-        "Wonder: Complete Earth Recultivator": 5,
-    }
-    for loc_name, tier in MILESTONE_TIERS.items():
+    for loc_name in world.active_milestones:
+        tier = MILESTONE_TIERS.get(loc_name, 1)
         loc = mw.get_location(loc_name, player)
         loc.access_rule = lambda state, p=player, t=tier: _tier_predicate(t, state, p)
 

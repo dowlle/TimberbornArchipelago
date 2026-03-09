@@ -1,7 +1,9 @@
 from . import TimberbornTestBase
 from ..Items import BLUEPRINT_ITEMS, item_name_to_id, ALL_FT_BLUEPRINTS
 from ..Locations import (ALL_SCIENCE_LOCATIONS, ALL_MILESTONE_LOCATIONS,
-                         ALL_BUILDING_NAMES, location_name_to_id)
+                         ALL_BUILDING_NAMES, location_name_to_id,
+                         POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
+                         SURVIVAL_LOCATIONS, WONDER_LOCATIONS)
 from ..ShopLayout import BASE_SCIENCE, NUM_PATHS
 
 
@@ -131,3 +133,90 @@ class TestSkipCountZero(TimberbornTestBase):
     def test_no_skip_items(self):
         skip_items = [i for i in self.multiworld.itempool if i.name == "Skip"]
         self.assertEqual(len(skip_items), 0)
+
+
+class TestNoPopulationMilestones(TimberbornTestBase):
+    options = {"include_population_milestones": 0}
+
+    def test_population_milestones_excluded(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        for ms in POPULATION_LOCATIONS:
+            self.assertNotIn(ms, loc_names)
+
+    def test_other_milestones_still_present(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        for ms in WELLBEING_LOCATIONS + SURVIVAL_LOCATIONS + WONDER_LOCATIONS:
+            self.assertIn(ms, loc_names)
+
+
+class TestNoWellbeingMilestones(TimberbornTestBase):
+    options = {"include_wellbeing_milestones": 0}
+
+    def test_wellbeing_milestones_excluded(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        for ms in WELLBEING_LOCATIONS:
+            self.assertNotIn(ms, loc_names)
+
+
+class TestNoSurvivalMilestones(TimberbornTestBase):
+    options = {"include_survival_milestones": 0}
+
+    def test_survival_milestones_excluded(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        for ms in SURVIVAL_LOCATIONS:
+            self.assertNotIn(ms, loc_names)
+
+
+class TestNoWonderMilestone(TimberbornTestBase):
+    options = {"include_wonder_milestone": 0, "goal": 1}
+
+    def test_wonder_milestone_excluded(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        for ms in WONDER_LOCATIONS:
+            self.assertNotIn(ms, loc_names)
+
+
+class TestWonderForceEnabled(TimberbornTestBase):
+    """When goal is complete_wonder (0), Wonder milestone is force-enabled even if toggled off."""
+    options = {"include_wonder_milestone": 0, "goal": 0}
+
+    def test_wonder_milestone_present(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        self.assertIn("Wonder: Complete Earth Recultivator", loc_names)
+
+
+class TestAllMilestonesDisabled(TimberbornTestBase):
+    options = {
+        "include_population_milestones": 0,
+        "include_wellbeing_milestones": 0,
+        "include_survival_milestones": 0,
+        "include_wonder_milestone": 0,
+        "goal": 1,
+    }
+
+    def test_no_milestones(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        for ms in ALL_MILESTONE_LOCATIONS:
+            self.assertNotIn(ms, loc_names)
+
+    def test_item_count_still_matches(self):
+        item_count = len(self.multiworld.itempool)
+        location_count = len(self.multiworld.get_unfilled_locations(self.player))
+        self.assertEqual(item_count, location_count)
+
+
+class TestSlotDataMilestones(TimberbornTestBase):
+    def test_milestones_in_slot_data(self):
+        slot_data = self.world.fill_slot_data()
+        self.assertIn("milestones", slot_data)
+        self.assertEqual(len(slot_data["milestones"]), 18)
+
+    def test_milestone_metadata_fields(self):
+        slot_data = self.world.fill_slot_data()
+        for ms in slot_data["milestones"]:
+            self.assertIn("name", ms)
+            self.assertIn("location_id", ms)
+            self.assertIn("type", ms)
+            self.assertIn("threshold", ms)
+            self.assertIn(ms["type"], {"population", "wellbeing", "survival", "wonder"})
+            self.assertGreater(ms["threshold"], 0)
