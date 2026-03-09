@@ -2,9 +2,11 @@
 Generates the branching-path shop layout at world creation time.
 
 The shop has NUM_PATHS parallel abstract paths (A, B, C, D).  Locations are
-shuffled and dealt round-robin into paths, then priced on a linear ramp from
-BASE_SCIENCE to the player's configured max.  Tier gates are applied by
-mapping level ranges to the existing 5-tier system from Rules.py.
+shuffled and dealt round-robin into paths, then priced on an exponential ramp
+from BASE_SCIENCE to the player's configured max.  The exponential curve keeps
+early items cheap (matching vanilla T1 science costs) while ramping steeply
+toward endgame.  Tier gates are applied by mapping level ranges to the
+existing 5-tier system from Rules.py.
 """
 from __future__ import annotations
 
@@ -60,6 +62,13 @@ def generate_shop_layout(
     shuffled = list(science_locations)
     world.random.shuffle(shuffled)
 
+    # Pin critical survival buildings to the front so they always land in T1
+    PRIORITY_LOCATIONS = ["Science: Forester"]
+    for loc in reversed(PRIORITY_LOCATIONS):
+        if loc in shuffled:
+            shuffled.remove(loc)
+            shuffled.insert(0, loc)
+
     # Deal round-robin into paths
     paths: list[list[str]] = [[] for _ in range(NUM_PATHS)]
     for i, loc_name in enumerate(shuffled):
@@ -76,10 +85,9 @@ def generate_shop_layout(
             if level >= len(paths[path_idx]):
                 continue
             loc_name = paths[path_idx][level]
-            price = round(
-                BASE_SCIENCE
-                + (max_science - BASE_SCIENCE) * global_pos / max(n - 1, 1)
-            )
+            t = global_pos / max(n - 1, 1)
+            ratio = max_science / BASE_SCIENCE
+            price = round(BASE_SCIENCE * (ratio ** t))
             tier = get_tier_for_level(level)
             layout.append({
                 "path": PATH_LABELS[path_idx],
