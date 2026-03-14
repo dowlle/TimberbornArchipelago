@@ -1,12 +1,24 @@
 from . import TimberbornTestBase
-from ..Items import BLUEPRINT_ITEMS, item_name_to_id, ALL_FT_BLUEPRINTS
+from ..Items import (BLUEPRINT_ITEMS, item_name_to_id, ALL_FT_BLUEPRINTS,
+                     ALL_IT_ONLY_BLUEPRINTS, get_blueprint_items, get_building_names)
 from ..Locations import (ALL_SCIENCE_LOCATIONS, ALL_MILESTONE_LOCATIONS,
                          ALL_BUILDING_NAMES, location_name_to_id,
                          POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
-                         SURVIVAL_LOCATIONS, WONDER_LOCATIONS)
+                         SURVIVAL_LOCATIONS, FT_WONDER_LOCATIONS,
+                         IT_WONDER_LOCATIONS)
 from ..ShopLayout import BASE_SCIENCE, NUM_PATHS
 
 
+# ---------------------------------------------------------------------------
+# Iron Teeth test base
+# ---------------------------------------------------------------------------
+class TimberbornITTestBase(TimberbornTestBase):
+    options = {"faction": 1}
+
+
+# ---------------------------------------------------------------------------
+# Folktails (default) tests
+# ---------------------------------------------------------------------------
 class TestDefaultGeneration(TimberbornTestBase):
     """Default options should produce a valid world with branching shop."""
 
@@ -31,19 +43,24 @@ class TestDefaultGeneration(TimberbornTestBase):
             self.assertIn(entry["location_name"], loc_names,
                           f"Missing shop location: {entry['location_name']}")
 
-    def test_all_milestone_locations_created(self):
+    def test_all_active_milestone_locations_created(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
-        for ms_loc in ALL_MILESTONE_LOCATIONS:
+        for ms_loc in self.world.active_milestones:
             self.assertIn(ms_loc, loc_names, f"Missing milestone location: {ms_loc}")
+
+    def test_ft_wonder_location(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        self.assertIn("Wonder: Complete Earth Recultivator", loc_names)
+        self.assertNotIn("Wonder: Complete Earth Repopulator", loc_names)
 
     def test_total_location_count(self):
         self.assertEqual(len(ALL_BUILDING_NAMES), 126)
-        self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 18)
-        # Total pre-allocated shop slots + milestones
+        self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 19)  # 18 FT + 1 IT wonder
+        # Total pre-allocated shop slots + all milestones (both factions)
         total = len(location_name_to_id)
         expected_slots = 4 * 40  # NUM_PATHS * SLOTS_PER_PATH
-        self.assertEqual(total, expected_slots + 18,
-                         f"Expected {expected_slots + 18} total location IDs, got {total}")
+        self.assertEqual(total, expected_slots + 19,
+                         f"Expected {expected_slots + 19} total location IDs, got {total}")
 
     def test_no_duplicate_item_ids(self):
         ids = list(item_name_to_id.values())
@@ -59,6 +76,14 @@ class TestDefaultGeneration(TimberbornTestBase):
             bp_name = f"Blueprint: {building}"
             self.assertIn(bp_name, item_name_to_id,
                           f"Building '{building}' has no matching blueprint item")
+
+    def test_faction_in_slot_data(self):
+        slot_data = self.world.fill_slot_data()
+        self.assertEqual(slot_data["faction"], "Folktails")
+
+    def test_scavenger_flag_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertIn("Blueprint: Scavenger Flag", pool_names)
 
 
 class TestBranchingGeneration(TimberbornTestBase):
@@ -145,7 +170,7 @@ class TestNoPopulationMilestones(TimberbornTestBase):
 
     def test_other_milestones_still_present(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
-        for ms in WELLBEING_LOCATIONS + SURVIVAL_LOCATIONS + WONDER_LOCATIONS:
+        for ms in WELLBEING_LOCATIONS + SURVIVAL_LOCATIONS + FT_WONDER_LOCATIONS:
             self.assertIn(ms, loc_names)
 
 
@@ -172,7 +197,7 @@ class TestNoWonderMilestone(TimberbornTestBase):
 
     def test_wonder_milestone_excluded(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
-        for ms in WONDER_LOCATIONS:
+        for ms in FT_WONDER_LOCATIONS:
             self.assertNotIn(ms, loc_names)
 
 
@@ -220,3 +245,89 @@ class TestSlotDataMilestones(TimberbornTestBase):
             self.assertIn("threshold", ms)
             self.assertIn(ms["type"], {"population", "wellbeing", "survival", "wonder"})
             self.assertGreater(ms["threshold"], 0)
+
+
+# ---------------------------------------------------------------------------
+# Iron Teeth tests
+# ---------------------------------------------------------------------------
+class TestITDefaultGeneration(TimberbornITTestBase):
+    """Iron Teeth default options should produce a valid world."""
+
+    def test_item_count_matches_location_count(self):
+        item_count = len(self.multiworld.itempool)
+        location_count = len(self.multiworld.get_unfilled_locations(self.player))
+        self.assertEqual(item_count, location_count)
+
+    def test_faction_in_slot_data(self):
+        slot_data = self.world.fill_slot_data()
+        self.assertEqual(slot_data["faction"], "IronTeeth")
+
+    def test_it_wonder_location(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        self.assertIn("Wonder: Complete Earth Repopulator", loc_names)
+        self.assertNotIn("Wonder: Complete Earth Recultivator", loc_names)
+
+    def test_scavenger_flag_not_in_pool(self):
+        """ScavengerFlag is free for IT — should not be in item pool."""
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertNotIn("Blueprint: Scavenger Flag", pool_names)
+
+    def test_it_exclusive_items_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertIn("Blueprint: Rowhouse", pool_names)
+        self.assertIn("Blueprint: Steam Engine", pool_names)
+        self.assertIn("Blueprint: Laborer Monument", pool_names)
+
+    def test_ft_exclusive_items_not_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertNotIn("Blueprint: Mini Lodge", pool_names)
+        self.assertNotIn("Blueprint: Bakery", pool_names)
+        self.assertNotIn("Blueprint: Farmer Monument", pool_names)
+
+    def test_shared_items_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertIn("Blueprint: Forester", pool_names)
+        self.assertIn("Blueprint: Gear Workshop", pool_names)
+        self.assertIn("Blueprint: Smelter", pool_names)
+
+    def test_shop_layout_has_correct_buildings(self):
+        building_names = {e["building_name"] for e in self.world.shop_layout}
+        self.assertIn("Rowhouse", building_names)
+        self.assertNotIn("Mini Lodge", building_names)
+        self.assertIn("Forester", building_names)
+
+
+class TestITBranchingGeneration(TimberbornITTestBase):
+    """Iron Teeth branching shop should produce valid layout."""
+    options = {"faction": 1, "skip_count": 3}
+
+    def test_shop_layout_exists(self):
+        self.assertIsNotNone(self.world.shop_layout)
+        it_building_count = len(get_building_names("IronTeeth"))
+        self.assertEqual(len(self.world.shop_layout), it_building_count)
+
+    def test_shop_layout_has_4_paths(self):
+        paths = {e["path"] for e in self.world.shop_layout}
+        self.assertEqual(paths, {"A", "B", "C", "D"})
+
+
+class TestITWonderForceEnabled(TimberbornITTestBase):
+    """When goal is complete_wonder, IT Wonder milestone is force-enabled."""
+    options = {"faction": 1, "include_wonder_milestone": 0, "goal": 0}
+
+    def test_it_wonder_milestone_present(self):
+        loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
+        self.assertIn("Wonder: Complete Earth Repopulator", loc_names)
+
+
+class TestITSlotDataMilestones(TimberbornITTestBase):
+    def test_milestones_in_slot_data(self):
+        slot_data = self.world.fill_slot_data()
+        self.assertIn("milestones", slot_data)
+        self.assertEqual(len(slot_data["milestones"]), 18)
+
+    def test_wonder_is_earth_repopulator(self):
+        slot_data = self.world.fill_slot_data()
+        wonder = [ms for ms in slot_data["milestones"] if ms["type"] == "wonder"]
+        self.assertEqual(len(wonder), 1)
+        self.assertEqual(wonder[0]["name"], "Wonder: Complete Earth Repopulator")

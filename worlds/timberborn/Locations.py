@@ -3,7 +3,6 @@ from BaseClasses import Location
 # ---------------------------------------------------------------------------
 # Base IDs — ranges reserved per category
 #   9_500_000 – 9_599_999 : Shop slot locations (one per building in the AP shop)
-#   9_600_000 – 9_699_999 : IronTeeth science locations (future)
 #   9_700_000 – 9_799_999 : Milestone locations (population, wellbeing, survival, wonder)
 # ---------------------------------------------------------------------------
 FT_SCIENCE_LOC_BASE = 9_500_000
@@ -35,9 +34,11 @@ ALL_SCIENCE_LOCATIONS: list[str] = [
 ]
 
 # ---------------------------------------------------------------------------
-# Building pool — the "Science: X" names used as a source list for
-# ShopLayout to draw from.  Order matches Items.py ALL_FT_BLUEPRINTS.
-# These are NOT location names; they're just the building reference pool.
+# Building pool — the building names used as a source list for ShopLayout
+# to draw from.  These are NOT location names; they're just the reference pool.
+#
+# Faction-specific pools are built via Items.get_building_names(faction).
+# The lists below are kept for reference and backward compatibility.
 # ---------------------------------------------------------------------------
 
 # --- WOOD ---
@@ -131,9 +132,14 @@ DECORATION_BUILDINGS = [
     "Pole Banner", "Square Banner",
 ]
 
-# --- MONUMENTS ---
-MONUMENT_BUILDINGS = [
+# --- FOLKTAILS MONUMENTS ---
+FT_MONUMENT_BUILDINGS = [
     "Farmer Monument", "Brazier of Bonding", "Fountain of Joy",
+]
+
+# --- IRON TEETH MONUMENTS ---
+IT_MONUMENT_BUILDINGS = [
+    "Laborer Monument", "Flame of Unity", "Tribute to Ingenuity",
 ]
 
 ALL_BUILDING_NAMES: list[str] = (
@@ -141,7 +147,7 @@ ALL_BUILDING_NAMES: list[str] = (
     + WATER_BUILDINGS + LANDSCAPING_BUILDINGS + METAL_BUILDINGS
     + POWER_BUILDINGS + SCIENCE_PRODUCTION_BUILDINGS + DISTRICT_BUILDINGS
     + WELLBEING_BUILDINGS + PATH_BUILDINGS + AUTOMATION_BUILDINGS
-    + DECORATION_BUILDINGS + MONUMENT_BUILDINGS
+    + DECORATION_BUILDINGS + FT_MONUMENT_BUILDINGS
 )
 
 # ---------------------------------------------------------------------------
@@ -173,15 +179,24 @@ SURVIVAL_LOCATIONS: list[str] = [
     "Survival: Survive 10 Badtides",
 ]
 
-WONDER_LOCATIONS: list[str] = [
+FT_WONDER_LOCATIONS: list[str] = [
     "Wonder: Complete Earth Recultivator",
 ]
 
+IT_WONDER_LOCATIONS: list[str] = [
+    "Wonder: Complete Earth Repopulator",
+]
+
+# Backward compat alias
+WONDER_LOCATIONS = FT_WONDER_LOCATIONS
+
+# All milestones in stable order — append-only to preserve IDs
 ALL_MILESTONE_LOCATIONS: list[str] = (
     POPULATION_LOCATIONS
     + WELLBEING_LOCATIONS
     + SURVIVAL_LOCATIONS
-    + WONDER_LOCATIONS
+    + FT_WONDER_LOCATIONS
+    + IT_WONDER_LOCATIONS  # appended at end to preserve existing FT milestone IDs
 )
 
 # ---------------------------------------------------------------------------

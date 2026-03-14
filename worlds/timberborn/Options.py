@@ -2,6 +2,18 @@ from dataclasses import dataclass
 from Options import Choice, Range, Toggle, PerGameCommonOptions
 
 
+class Faction(Choice):
+    """
+    Which beaver faction to play as?
+    - folktails: Nature-loving beavers with unique buildings like Beehive, Aquatic Farmhouse, Bakery.
+    - iron_teeth: Industrial beavers with unique buildings like Steam Engine, Rowhouse, Coffee Brewery.
+    """
+    display_name = "Faction"
+    option_folktails = 0
+    option_iron_teeth = 1
+    default = 0
+
+
 class Goal(Choice):
     """
     What is required to complete the game?
@@ -69,6 +81,17 @@ class MaxScienceCost(Range):
     default = 5000
 
 
+class ScienceCostMultiplier(Range):
+    """
+    Percentage multiplier applied to all shop science costs.
+    50 = half price (faster unlocks), 100 = default, 200 = double price (slower).
+    """
+    display_name = "Science Cost Multiplier"
+    range_start = 10
+    range_end = 1000
+    default = 100
+
+
 class SkipCount(Range):
     """Number of Skip items added to the item pool. Skips let you check a shop location for free."""
     display_name = "Skip Count"
@@ -103,6 +126,7 @@ class IncludeWonderMilestone(Toggle):
 
 @dataclass
 class TimberbornOptions(PerGameCommonOptions):
+    faction: Faction
     goal: Goal
     randomization_style: RandomizationStyle
     population_goal: PopulationGoal
@@ -110,6 +134,7 @@ class TimberbornOptions(PerGameCommonOptions):
     drought_difficulty: DroughtDifficulty
     include_traps: IncludeTraps
     max_science_cost: MaxScienceCost
+    science_cost_multiplier: ScienceCostMultiplier
     skip_count: SkipCount
     include_population_milestones: IncludePopulationMilestones
     include_wellbeing_milestones: IncludeWellbeingMilestones

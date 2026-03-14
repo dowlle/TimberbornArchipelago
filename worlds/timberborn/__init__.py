@@ -1,11 +1,13 @@
 from worlds.AutoWorld import World, WebWorld
 from BaseClasses import Region, Location, Item, ItemClassification, Tutorial
 from .Items import (TimberbornItem, item_table, item_name_to_id,
+                    get_blueprint_items, get_building_names,
                     BLUEPRINT_ITEMS, FILLER_ITEMS, TRAP_ITEMS, BOOSTS)
 from .Locations import (TimberbornLocation, location_table, location_name_to_id,
                         ALL_BUILDING_NAMES,
                         POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
-                        SURVIVAL_LOCATIONS, WONDER_LOCATIONS)
+                        SURVIVAL_LOCATIONS, FT_WONDER_LOCATIONS,
+                        IT_WONDER_LOCATIONS)
 from .Options import TimberbornOptions
 from .Rules import set_rules
 
@@ -55,7 +57,7 @@ class TimberbornWorld(World):
     beavers through droughts and badtides. Building blueprints that normally
     cost Science Points are shuffled into the multiworld — you must survive on
     whatever tech arrives while sending checks to unlock buildings for others.
-    (Folktails faction. Iron Teeth support planned for a future version.)
+    Supports Folktails and Iron Teeth factions.
     """
 
     game = "Timberborn"
@@ -66,11 +68,15 @@ class TimberbornWorld(World):
     location_name_to_id = location_name_to_id
 
     # Set during create_regions
+    faction: str | None = None
     shop_layout: list[dict] | None = None
     active_milestones: list[str] | None = None
 
     def create_regions(self) -> None:
         from .ShopLayout import generate_shop_layout
+
+        # Determine faction
+        self.faction = "IronTeeth" if self.options.faction.value == 1 else "Folktails"
 
         menu = Region("Menu", self.player, self.multiworld)
         self.multiworld.regions.append(menu)
@@ -89,8 +95,9 @@ class TimberbornWorld(World):
         if self.options.include_survival_milestones:
             self.active_milestones.extend(SURVIVAL_LOCATIONS)
         # Force-enable Wonder milestone if goal requires it
+        wonder_locs = IT_WONDER_LOCATIONS if self.faction == "IronTeeth" else FT_WONDER_LOCATIONS
         if self.options.include_wonder_milestone or self.options.goal.value == 0:
-            self.active_milestones.extend(WONDER_LOCATIONS)
+            self.active_milestones.extend(wonder_locs)
 
         for loc_name in self.active_milestones:
             loc_id = location_name_to_id[loc_name]
@@ -99,10 +106,12 @@ class TimberbornWorld(World):
             )
 
         # Branching shop — 4 paths with sequential ordering
+        building_names = get_building_names(self.faction)
         self.shop_layout = generate_shop_layout(
             self,
-            list(ALL_BUILDING_NAMES),
+            building_names,
             self.options.max_science_cost.value,
+            self.options.science_cost_multiplier.value,
         )
         shop_region = Region("Shop", self.player, self.multiworld)
         self.multiworld.regions.append(shop_region)
@@ -143,13 +152,17 @@ class TimberbornWorld(World):
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         items_created = 0
 
-        # --- Blueprint items ---
-        for item_name in BLUEPRINT_ITEMS:
+        # --- Blueprint items (faction-specific) ---
+        blueprint_items = get_blueprint_items(self.faction)
+        for item_name in sorted(blueprint_items):
             self.multiworld.itempool.append(self.create_item(item_name))
             items_created += 1
 
-        # Forester must be available from sphere 1 for sustainable wood
+        # Essential buildings must be available from sphere 1
         self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
+        self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
+        self.multiworld.early_items[self.player]["Blueprint: Levee"] = 1
+        self.multiworld.early_items[self.player]["Blueprint: Gear Workshop"] = 1
 
         # --- Boost items ---
         for name, classification in BOOSTS:
@@ -201,7 +214,8 @@ class TimberbornWorld(World):
             "population_goal": self.options.population_goal.value,
             "survival_cycles_goal": self.options.survival_cycles_goal.value,
             "drought_difficulty": self.options.drought_difficulty.value,
-            "faction": "Folktails",  # hard-coded for v1; IronTeeth planned
+            "faction": self.faction,
+            "science_cost_multiplier": self.options.science_cost_multiplier.value,
             "skip_count": self.options.skip_count.value,
             "shop_layout": [
                 {
