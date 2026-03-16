@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from Options import Choice, Range, Toggle, PerGameCommonOptions
+from Options import Choice, Range, Toggle, OptionSet, PerGameCommonOptions
 
 
 class Faction(Choice):
@@ -14,17 +14,45 @@ class Faction(Choice):
     default = 0
 
 
-class Goal(Choice):
+class GoalSelection(OptionSet):
     """
-    What is required to complete the game?
-    - complete_wonder: Construct your faction's Wonder building.
-    - reach_population: Reach the target population (see population_goal).
-    - survive_cycles: Survive a set number of drought cycles (see survival_cycles_goal).
+    Which victory conditions are in play? Pick any combination, or use
+    ``random-range-1-3`` in YAML to randomize how many are active.
+
+    Possible values:
+    - **Wonder**: Build your faction's Wonder building.
+    - **Population**: Reach the target beaver population (see population_goal).
+    - **Droughts**: Survive a number of drought cycles (see drought_cycles_goal).
+    - **Badtides**: Survive a number of badtide cycles (see badtide_cycles_goal).
+    - **Well-being**: Reach a target average well-being level (see wellbeing_goal).
+    - **Bots**: Construct a number of bots (see bots_goal).
+    - **Water Storage**: Reach a water storage capacity threshold (see water_storage_goal).
+
+    At least one goal must be selected. If the resolved set is empty,
+    the game falls back to Wonder.
     """
-    display_name = "Goal"
-    option_complete_wonder = 0
-    option_reach_population = 1
-    option_survive_cycles = 2
+    display_name = "Goal Selection"
+    valid_keys = {
+        "Wonder",
+        "Population",
+        "Droughts",
+        "Badtides",
+        "Well-being",
+        "Bots",
+        "Water Storage",
+    }
+    default = {"Wonder"}
+
+
+class GoalRequirement(Choice):
+    """
+    Of the goals selected in *Goal Selection*, how many must be completed?
+    - any: Complete ANY ONE of the selected goals to win.
+    - all: Complete ALL selected goals to win.
+    """
+    display_name = "Goal Requirement"
+    option_any = 0
+    option_all = 1
     default = 0
 
 
@@ -40,20 +68,69 @@ class RandomizationStyle(Choice):
     default = 0
 
 
+class PopulationMode(Choice):
+    """
+    When the 'Population' goal is active, what counts toward the target?
+    - beavers_only: Only beavers count.
+    - bots_only: Only bots count.
+    - beavers_and_bots: Both beavers and bots count together.
+    """
+    display_name = "Population Mode"
+    option_beavers_only = 0
+    option_bots_only = 1
+    option_beavers_and_bots = 2
+    default = 0
+
+
 class PopulationGoal(Range):
-    """When goal is 'reach_population', the number of beavers required."""
+    """When 'Population' goal is active, the total count required (see population_mode)."""
     display_name = "Population Goal"
     range_start = 10
     range_end = 500
     default = 100
 
 
-class SurvivalCyclesGoal(Range):
-    """When goal is 'survive_cycles', the number of drought cycles to survive."""
-    display_name = "Survival Cycles Goal"
+class DroughtCyclesGoal(Range):
+    """When 'Droughts' goal is active, the number of drought cycles to survive."""
+    display_name = "Drought Cycles Goal"
     range_start = 5
     range_end = 100
-    default = 30
+    default = 25
+
+
+class BadtideCyclesGoal(Range):
+    """When 'Badtides' goal is active, the number of badtide cycles to survive."""
+    display_name = "Badtide Cycles Goal"
+    range_start = 1
+    range_end = 50
+    default = 10
+
+
+class WellbeingGoal(Range):
+    """When 'Well-being' goal is active, the average well-being level to reach.
+    NOTE: Client-side tracking is not yet implemented."""
+    display_name = "Well-being Goal"
+    range_start = 5
+    range_end = 20
+    default = 15
+
+
+class BotsGoal(Range):
+    """When 'Bots' goal is active, the number of bots to construct.
+    NOTE: Client-side tracking is not yet implemented."""
+    display_name = "Bots Goal"
+    range_start = 1
+    range_end = 50
+    default = 10
+
+
+class WaterStorageGoal(Range):
+    """When 'Water Storage' goal is active, the water storage capacity to reach.
+    NOTE: Client-side tracking is not yet implemented."""
+    display_name = "Water Storage Goal"
+    range_start = 500
+    range_end = 50000
+    default = 5000
 
 
 class DroughtDifficulty(Range):
@@ -100,6 +177,22 @@ class SkipCount(Range):
     default = 3
 
 
+class ProgressiveItems(Choice):
+    """
+    Merge related size-upgrade buildings into progressive item chains.
+    Each receipt of a progressive item unlocks the next tier in the sequence
+    (e.g. Progressive Platforms: Platform → Double Platform → Triple Platform).
+    - off: Each building is a separate item (classic behavior).
+    - grouped_random: Each chain is randomly enabled or disabled per seed.
+    - on: All progressive chains are active.
+    """
+    display_name = "Progressive Items"
+    option_off = 0
+    option_grouped_random = 1
+    option_on = 2
+    default = 2
+
+
 class IncludePopulationMilestones(Toggle):
     """Include population milestone locations (beaver count thresholds, first born/grown)."""
     display_name = "Include Population Milestones"
@@ -127,15 +220,22 @@ class IncludeWonderMilestone(Toggle):
 @dataclass
 class TimberbornOptions(PerGameCommonOptions):
     faction: Faction
-    goal: Goal
+    goal_selection: GoalSelection
+    goal_requirement: GoalRequirement
     randomization_style: RandomizationStyle
     population_goal: PopulationGoal
-    survival_cycles_goal: SurvivalCyclesGoal
+    population_mode: PopulationMode
+    drought_cycles_goal: DroughtCyclesGoal
+    badtide_cycles_goal: BadtideCyclesGoal
+    wellbeing_goal: WellbeingGoal
+    bots_goal: BotsGoal
+    water_storage_goal: WaterStorageGoal
     drought_difficulty: DroughtDifficulty
     include_traps: IncludeTraps
     max_science_cost: MaxScienceCost
     science_cost_multiplier: ScienceCostMultiplier
     skip_count: SkipCount
+    progressive_items: ProgressiveItems
     include_population_milestones: IncludePopulationMilestones
     include_wellbeing_milestones: IncludeWellbeingMilestones
     include_survival_milestones: IncludeSurvivalMilestones

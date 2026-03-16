@@ -279,14 +279,48 @@ def _set_milestone_rules(world, player, mw, faction: str) -> None:
         )
 
 
+def _resolve_goals(world) -> set[str]:
+    """Return the resolved set of active goals, falling back to Wonder if empty."""
+    goals = set(world.options.goal_selection.value)
+    if not goals:
+        goals = {"Wonder"}
+    return goals
+
+
 def _set_completion_condition(world, player, mw, faction: str) -> None:
-    goal = world.options.goal.value
-    if goal == 0:  # complete_wonder
-        mw.completion_condition[player] = lambda state, f=faction: (
-            _tier5(state, player, f)
+    goals = _resolve_goals(world)
+    world.resolved_goals = goals  # store for slot_data
+    require_all = world.options.goal_requirement.value == 1
+
+    # Wonder is the only goal with a pure logic check (requires T5 tech).
+    # All other goals are tracked client-side: the client sends an event item
+    # "Victory: <GoalName>" when the in-game condition is met.
+    # The completion condition checks for these event items.
+
+    goal_checks: list = []
+
+    if "Wonder" in goals:
+        goal_checks.append(
+            lambda state, p=player, f=faction: _tier5(state, p, f)
+        )
+
+    client_goals = goals - {"Wonder"}
+    for goal_name in sorted(client_goals):
+        event = f"Victory: {goal_name}"
+        goal_checks.append(
+            lambda state, p=player, ev=event: state.has(ev, p)
+        )
+
+    if not goal_checks:
+        # Safety fallback — should not happen due to _resolve_goals
+        mw.completion_condition[player] = lambda state, f=faction: _tier5(state, player, f)
+        return
+
+    if require_all:
+        mw.completion_condition[player] = lambda state: all(
+            check(state) for check in goal_checks
         )
     else:
-        # reach_population / survive_cycles: client sends a Victory item when done
-        mw.completion_condition[player] = lambda state: (
-            state.can_reach("Timberborn", "Region", player)
+        mw.completion_condition[player] = lambda state: any(
+            check(state) for check in goal_checks
         )

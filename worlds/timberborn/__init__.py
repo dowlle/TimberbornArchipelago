@@ -1,5 +1,7 @@
+from typing import Optional
+
 from worlds.AutoWorld import World, WebWorld
-from BaseClasses import Region, Location, Item, ItemClassification, Tutorial
+from BaseClasses import Region, Location, Item, ItemClassification, Tutorial, CollectionState
 from .Items import (TimberbornItem, item_table, item_name_to_id,
                     get_blueprint_items, get_building_names,
                     BLUEPRINT_ITEMS, FILLER_ITEMS, TRAP_ITEMS, BOOSTS)
@@ -9,6 +11,7 @@ from .Locations import (TimberbornLocation, location_table, location_name_to_id,
                         SURVIVAL_LOCATIONS, FT_WONDER_LOCATIONS,
                         IT_WONDER_LOCATIONS)
 from .Options import TimberbornOptions
+from .ProgressiveItems import get_progressive_chains
 from .Rules import set_rules
 
 
@@ -71,12 +74,27 @@ class TimberbornWorld(World):
     faction: str | None = None
     shop_layout: list[dict] | None = None
     active_milestones: list[str] | None = None
+    resolved_goals: set[str] | None = None
+    _progressive_chains: dict[str, tuple[str, ...]] | None = None
 
     def create_regions(self) -> None:
         from .ShopLayout import generate_shop_layout
 
         # Determine faction
         self.faction = "IronTeeth" if self.options.faction.value == 1 else "Folktails"
+
+        # Resolve progressive item chains based on option
+        prog_opt = self.options.progressive_items.value
+        if prog_opt == 2:  # on
+            self._progressive_chains = get_progressive_chains(self.faction, True)
+        elif prog_opt == 1:  # grouped_random
+            all_chains = get_progressive_chains(self.faction, True)
+            self._progressive_chains = {
+                name: chain for name, chain in all_chains.items()
+                if self.random.choice([True, False])
+            }
+        else:  # off
+            self._progressive_chains = {}
 
         menu = Region("Menu", self.player, self.multiworld)
         self.multiworld.regions.append(menu)
@@ -94,9 +112,9 @@ class TimberbornWorld(World):
             self.active_milestones.extend(WELLBEING_LOCATIONS)
         if self.options.include_survival_milestones:
             self.active_milestones.extend(SURVIVAL_LOCATIONS)
-        # Force-enable Wonder milestone if goal requires it
+        # Force-enable Wonder milestone if Wonder goal is active
         wonder_locs = IT_WONDER_LOCATIONS if self.faction == "IronTeeth" else FT_WONDER_LOCATIONS
-        if self.options.include_wonder_milestone or self.options.goal.value == 0:
+        if self.options.include_wonder_milestone or "Wonder" in self.options.goal_selection.value:
             self.active_milestones.extend(wonder_locs)
 
         for loc_name in self.active_milestones:
@@ -104,6 +122,19 @@ class TimberbornWorld(World):
             game_region.locations.append(
                 TimberbornLocation(self.player, loc_name, loc_id, game_region)
             )
+
+        # Victory event locations for client-tracked goals.
+        # The client sends these events when in-game conditions are met.
+        from .Rules import _resolve_goals
+        self.resolved_goals = _resolve_goals(self)
+        client_goals = self.resolved_goals - {"Wonder"}
+        for goal_name in sorted(client_goals):
+            event_name = f"Victory: {goal_name}"
+            event_loc = TimberbornLocation(self.player, event_name, None, game_region)
+            event_loc.place_locked_item(
+                TimberbornItem(event_name, ItemClassification.progression, None, self.player)
+            )
+            game_region.locations.append(event_loc)
 
         # Branching shop — 4 paths with sequential ordering
         building_names = get_building_names(self.faction)
@@ -152,9 +183,9 @@ class TimberbornWorld(World):
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         items_created = 0
 
-        # --- Blueprint items (faction-specific) ---
-        blueprint_items = get_blueprint_items(self.faction)
-        for item_name in sorted(blueprint_items):
+        # --- Blueprint items (faction-specific, with progressive swaps) ---
+        blueprint_items = get_blueprint_items(self.faction, self._progressive_chains)
+        for item_name in blueprint_items:
             self.multiworld.itempool.append(self.create_item(item_name))
             items_created += 1
 
@@ -206,17 +237,51 @@ class TimberbornWorld(World):
     def set_rules(self) -> None:
         set_rules(self)
 
+    def collect_item(self, state: CollectionState, item: Item,
+                     remove: bool = False) -> Optional[str]:
+        """Map progressive item receipts to concrete building names.
+
+        When a player receives "Progressive Platforms", the first receipt
+        adds "Blueprint: Platform" to state, the second adds
+        "Blueprint: Double Platform", etc.  Rules.py checks the concrete
+        building names, so logic works transparently.
+        """
+        if item.advancement and self._progressive_chains and item.name in self._progressive_chains:
+            chain = self._progressive_chains[item.name]
+            if remove:
+                for building in reversed(chain):
+                    bp = f"Blueprint: {building}"
+                    if state.has(bp, item.player):
+                        return bp
+            else:
+                for building in chain:
+                    bp = f"Blueprint: {building}"
+                    if not state.has(bp, item.player):
+                        return bp
+            return None
+        return super().collect_item(state, item, remove)
+
     def fill_slot_data(self) -> dict:
         data = {
-            "goal": self.options.goal.value,
+            "goals": sorted(self.resolved_goals),
+            "goal_requirement": self.options.goal_requirement.value,  # 0=any, 1=all
             "randomization_style": self.options.randomization_style.value,
             "include_traps": bool(self.options.include_traps.value),
             "population_goal": self.options.population_goal.value,
-            "survival_cycles_goal": self.options.survival_cycles_goal.value,
+            "population_mode": self.options.population_mode.value,
+            "drought_cycles_goal": self.options.drought_cycles_goal.value,
+            "badtide_cycles_goal": self.options.badtide_cycles_goal.value,
+            "wellbeing_goal": self.options.wellbeing_goal.value,
+            "bots_goal": self.options.bots_goal.value,
+            "water_storage_goal": self.options.water_storage_goal.value,
             "drought_difficulty": self.options.drought_difficulty.value,
             "faction": self.faction,
             "science_cost_multiplier": self.options.science_cost_multiplier.value,
             "skip_count": self.options.skip_count.value,
+            "progressive_chains": {
+                name: list(chain)
+                for name, chain in (self._progressive_chains or {}).items()
+            },
             "shop_layout": [
                 {
                     "path": e["path"],

@@ -8,6 +8,7 @@ from BaseClasses import Item, ItemClassification
 #   9_210_000 – 9_219_999 : Filler items
 #   9_220_000 – 9_229_999 : Trap items
 #   9_230_000 – 9_239_999 : Skip items
+#   9_240_000 – 9_249_999 : Progressive items
 # ---------------------------------------------------------------------------
 FT_BLUEPRINT_BASE  = 9_000_000
 IT_BLUEPRINT_BASE  = 9_100_000
@@ -15,6 +16,7 @@ BOOST_BASE         = 9_200_000
 FILLER_BASE        = 9_210_000
 TRAP_BASE          = 9_220_000
 SKIP_BASE          = 9_230_000
+PROGRESSIVE_BASE   = 9_240_000
 
 
 class TimberbornItem(Item):
@@ -494,6 +496,23 @@ item_table["Skip"] = {
     "id": SKIP_BASE,
 }
 
+# Progressive items — IDs frozen from PROGRESSIVE_BASE.
+# Order must NEVER change once assigned.
+from .ProgressiveItems import SHARED_PROGRESSIVE_CHAINS, FT_PROGRESSIVE_CHAINS, IT_PROGRESSIVE_CHAINS
+
+_ALL_PROGRESSIVE_CHAINS: list[tuple[str, tuple[str, ...]]] = (
+    list(SHARED_PROGRESSIVE_CHAINS.items())
+    + list(FT_PROGRESSIVE_CHAINS.items())
+    + list(IT_PROGRESSIVE_CHAINS.items())
+)
+
+for i, (prog_name, chain) in enumerate(_ALL_PROGRESSIVE_CHAINS):
+    item_table[prog_name] = {
+        "classification": ItemClassification.progression,
+        "count": len(chain),
+        "id": PROGRESSIVE_BASE + i,
+    }
+
 item_name_to_id: dict[str, int] = {name: data["id"] for name, data in item_table.items()}
 
 
@@ -503,14 +522,48 @@ item_name_to_id: dict[str, int] = {name: data["id"] for name, data in item_table
 BLUEPRINT_ITEMS: set[str] = {f"Blueprint: {name}" for name, _ in ALL_FT_BLUEPRINTS}
 
 
-def get_blueprint_items(faction: str) -> set[str]:
-    """Return the set of blueprint item names for the given faction."""
+def get_blueprint_items(
+    faction: str,
+    progressive_chains: dict[str, tuple[str, ...]] | None = None,
+) -> list[str]:
+    """Return the item names for the given faction's blueprint pool.
+
+    When *progressive_chains* is provided, individual buildings that belong
+    to a chain are replaced by N copies of the progressive item (one per
+    chain member).  Returns a list (not a set) so duplicate progressive
+    entries are preserved for correct item counts.
+    """
     if faction == "IronTeeth":
-        # Shared items (from FT list, excluding FT-only) + IT-exclusive
         shared = {f"Blueprint: {n}" for n, _ in ALL_FT_BLUEPRINTS if n in _SHARED_NAMES}
         it_only = {f"Blueprint: {n}" for n, _ in ALL_IT_ONLY_BLUEPRINTS}
-        return shared | it_only
-    return BLUEPRINT_ITEMS
+        base = shared | it_only
+    else:
+        base = set(BLUEPRINT_ITEMS)
+
+    if not progressive_chains:
+        return sorted(base)
+
+    # Build reverse lookup: building name → progressive item name
+    building_to_prog: dict[str, str] = {}
+    for prog_name, chain in progressive_chains.items():
+        for building in chain:
+            building_to_prog[building] = prog_name
+
+    result: list[str] = []
+    prog_added: dict[str, int] = {}
+    for bp_name in sorted(base):
+        # Strip "Blueprint: " prefix to check against chain members
+        building = bp_name.removeprefix("Blueprint: ")
+        if building in building_to_prog:
+            prog_name = building_to_prog[building]
+            prog_added.setdefault(prog_name, 0)
+            prog_added[prog_name] += 1
+            # Add one copy of the progressive item per chain member
+            result.append(prog_name)
+        else:
+            result.append(bp_name)
+
+    return result
 
 
 def get_building_names(faction: str) -> list[str]:

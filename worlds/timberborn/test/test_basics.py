@@ -6,6 +6,7 @@ from ..Locations import (ALL_SCIENCE_LOCATIONS, ALL_MILESTONE_LOCATIONS,
                          POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
                          SURVIVAL_LOCATIONS, FT_WONDER_LOCATIONS,
                          IT_WONDER_LOCATIONS)
+from ..ProgressiveItems import get_building_to_progressive
 from ..ShopLayout import BASE_SCIENCE, NUM_PATHS
 
 
@@ -29,9 +30,18 @@ class TestDefaultGeneration(TimberbornTestBase):
                          f"Item pool ({item_count}) != locations ({location_count})")
 
     def test_all_blueprint_items_in_pool(self):
+        """Every blueprint should be in the pool directly or via a progressive item."""
         pool_names = {item.name for item in self.multiworld.itempool}
+        building_to_prog = get_building_to_progressive(
+            self.world.faction, bool(self.world._progressive_chains))
         for bp_name in BLUEPRINT_ITEMS:
-            self.assertIn(bp_name, pool_names, f"Missing blueprint item: {bp_name}")
+            building = bp_name.removeprefix("Blueprint: ")
+            if building in building_to_prog:
+                prog_name = building_to_prog[building]
+                self.assertIn(prog_name, pool_names,
+                              f"Missing progressive item {prog_name} for {bp_name}")
+            else:
+                self.assertIn(bp_name, pool_names, f"Missing blueprint item: {bp_name}")
 
     def test_correct_blueprint_count(self):
         self.assertEqual(len(ALL_FT_BLUEPRINTS), 126, "Expected 126 Folktails blueprints")
@@ -318,6 +328,87 @@ class TestITWonderForceEnabled(TimberbornITTestBase):
     def test_it_wonder_milestone_present(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         self.assertIn("Wonder: Complete Earth Repopulator", loc_names)
+
+
+# ---------------------------------------------------------------------------
+# Progressive items tests
+# ---------------------------------------------------------------------------
+class TestProgressiveItemsOn(TimberbornTestBase):
+    """Default (progressive_items=on) should use progressive items."""
+    options = {"progressive_items": 2}
+
+    def test_progressive_items_in_pool(self):
+        pool_names = [item.name for item in self.multiworld.itempool]
+        self.assertIn("Progressive Platforms", pool_names)
+        self.assertIn("Progressive Flood Control", pool_names)
+        self.assertIn("Progressive Bridges", pool_names)
+
+    def test_progressive_item_counts(self):
+        pool_names = [item.name for item in self.multiworld.itempool]
+        self.assertEqual(pool_names.count("Progressive Platforms"), 3)
+        self.assertEqual(pool_names.count("Progressive Flood Control"), 3)
+        self.assertEqual(pool_names.count("Progressive Bridges"), 6)
+        self.assertEqual(pool_names.count("Progressive Overhangs"), 5)
+        self.assertEqual(pool_names.count("Progressive Dynamite"), 3)
+        self.assertEqual(pool_names.count("Progressive Housing"), 3)
+        self.assertEqual(pool_names.count("Progressive Wind Power"), 2)
+
+    def test_individual_buildings_not_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertNotIn("Blueprint: Double Platform", pool_names)
+        self.assertNotIn("Blueprint: Triple Platform", pool_names)
+        self.assertNotIn("Blueprint: Double Floodgate", pool_names)
+        self.assertNotIn("Blueprint: Suspension Bridge 3x1", pool_names)
+
+    def test_progressive_chains_in_slot_data(self):
+        slot_data = self.world.fill_slot_data()
+        self.assertIn("progressive_chains", slot_data)
+        chains = slot_data["progressive_chains"]
+        self.assertIn("Progressive Platforms", chains)
+        self.assertEqual(chains["Progressive Platforms"],
+                         ["Platform", "Double Platform", "Triple Platform"])
+
+    def test_item_count_still_matches(self):
+        item_count = len(self.multiworld.itempool)
+        location_count = len(self.multiworld.get_unfilled_locations(self.player))
+        self.assertEqual(item_count, location_count)
+
+
+class TestProgressiveItemsOff(TimberbornTestBase):
+    """progressive_items=off should use classic individual items."""
+    options = {"progressive_items": 0}
+
+    def test_no_progressive_items_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertNotIn("Progressive Platforms", pool_names)
+        self.assertNotIn("Progressive Flood Control", pool_names)
+        self.assertNotIn("Progressive Bridges", pool_names)
+
+    def test_individual_buildings_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertIn("Blueprint: Platform", pool_names)
+        self.assertIn("Blueprint: Double Platform", pool_names)
+        self.assertIn("Blueprint: Triple Platform", pool_names)
+        self.assertIn("Blueprint: Floodgate", pool_names)
+
+    def test_empty_progressive_chains_in_slot_data(self):
+        slot_data = self.world.fill_slot_data()
+        self.assertEqual(slot_data["progressive_chains"], {})
+
+
+class TestProgressiveItemsIT(TimberbornITTestBase):
+    """IT should have shared progressive chains but not FT-only ones."""
+    options = {"faction": 1, "progressive_items": 2}
+
+    def test_shared_progressive_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertIn("Progressive Platforms", pool_names)
+        self.assertIn("Progressive Bridges", pool_names)
+
+    def test_ft_only_progressive_not_in_pool(self):
+        pool_names = {item.name for item in self.multiworld.itempool}
+        self.assertNotIn("Progressive Housing", pool_names)
+        self.assertNotIn("Progressive Wind Power", pool_names)
 
 
 class TestITSlotDataMilestones(TimberbornITTestBase):
