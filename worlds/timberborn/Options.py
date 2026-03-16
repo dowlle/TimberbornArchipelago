@@ -7,6 +7,9 @@ class Faction(Choice):
     Which beaver faction to play as?
     - folktails: Nature-loving beavers with unique buildings like Beehive, Aquatic Farmhouse, Bakery.
     - iron_teeth: Industrial beavers with unique buildings like Steam Engine, Rowhouse, Coffee Brewery.
+
+    Use ``random`` in YAML for a random faction per seed.
+    The client will block connection if you load the wrong faction in-game.
     """
     display_name = "Faction"
     option_folktails = 0
