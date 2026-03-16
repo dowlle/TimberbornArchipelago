@@ -10,6 +10,10 @@ class Faction(Choice):
 
     Use ``random`` in YAML for a random faction per seed.
     The client will block connection if you load the wrong faction in-game.
+
+    NOTE: Iron Teeth must be unlocked in-game before selecting it here.
+    Unlock it by reaching average well-being 8 in a Folktails game first,
+    or the Archipelago mod may auto-unlock it for you.
     """
     display_name = "Faction"
     option_folktails = 0

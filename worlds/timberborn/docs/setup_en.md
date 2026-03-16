@@ -33,6 +33,10 @@
 - **Milestones** (population, well-being, survival, wonder) trigger automatically as you play.
 - Buildings unlock in your toolbar as you receive blueprint items from the multiworld.
 
+## Important: Faction Selection
+
+If you set `faction: iron_teeth` or `faction: random` in your YAML, make sure Iron Teeth is **unlocked in your game first** (requires reaching average well-being 8 in a Folktails game). The mod will block connection if you load the wrong faction.
+
 ## YAML Configuration
 
 Download the [template YAML](../player-settings) and configure your options:
@@ -41,16 +45,25 @@ Download the [template YAML](../player-settings) and configure your options:
 game: Timberborn
 name: YourName
 Timberborn:
-  goal: complete_wonder            # complete_wonder | reach_population | survive_cycles
-  randomization_style: shuffle     # shuffle | grand_chaos
-  population_goal: 100             # used when goal is reach_population
-  survival_cycles_goal: 30         # used when goal is survive_cycles
-  drought_difficulty: 3            # 1 (easy) to 5 (brutal)
+  faction: folktails               # folktails | iron_teeth | random (IT must be unlocked first!)
+  goal_selection:                   # pick any combination of victory conditions
+    - Wonder
+  goal_requirement: any             # any (complete one) | all (complete all)
+  population_goal: 100              # target for Population goal
+  population_mode: beavers_only     # beavers_only | bots_only | beavers_and_bots
+  drought_cycles_goal: 25           # target for Droughts goal
+  badtide_cycles_goal: 10           # target for Badtides goal
+  wellbeing_goal: 15                # target for Well-being goal
+  bots_goal: 10                     # target for Bots goal
+  water_storage_goal: 5000          # target for Water Storage goal
+  randomization_style: shuffle      # shuffle | grand_chaos
+  drought_difficulty: 3             # 1 (easy) to 5 (brutal)
   include_traps: true
-  max_science_cost: 5000           # max price for the most expensive shop location (1000-20000)
-  skip_count: 3                    # number of Skip items in the pool (0-10)
-  include_population_milestones: true   # population threshold checks
-  include_wellbeing_milestones: true    # well-being level checks
-  include_survival_milestones: true     # drought/badtide survival checks
-  include_wonder_milestone: true        # wonder completion check
+  max_science_cost: 5000            # max price for the most expensive shop location (1000-20000)
+  skip_count: 3                     # number of Skip items in the pool (0-10)
+  progressive_items: on             # off | grouped_random | on
+  include_population_milestones: true
+  include_wellbeing_milestones: true
+  include_survival_milestones: true
+  include_wonder_milestone: true
 ```
