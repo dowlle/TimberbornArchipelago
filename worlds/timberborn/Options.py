@@ -224,6 +224,19 @@ class IncludeWonderMilestone(Toggle):
     default = 1
 
 
+class ForceEarlyItems(Toggle):
+    """
+    When enabled, essential early-game blueprints (Forester, Stairs, Levee, Gear Workshop)
+    are forced into the first reachable sphere, guaranteeing they are available right away.
+
+    When disabled, these items are placed freely like any other progression item and may
+    appear anywhere in the multiworld. This makes the early game significantly harder and
+    less predictable, but allows for more varied and challenging seeds.
+    """
+    display_name = "Force Early Items"
+    default = 1
+
+
 @dataclass
 class TimberbornOptions(PerGameCommonOptions):
     faction: Faction
@@ -247,3 +260,4 @@ class TimberbornOptions(PerGameCommonOptions):
     include_wellbeing_milestones: IncludeWellbeingMilestones
     include_survival_milestones: IncludeSurvivalMilestones
     include_wonder_milestone: IncludeWonderMilestone
+    force_early_items: ForceEarlyItems
