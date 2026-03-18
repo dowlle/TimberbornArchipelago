@@ -158,11 +158,12 @@ class TimberbornWorld(World):
             self.multiworld.itempool.append(self.create_item(item_name))
             items_created += 1
 
-        # Essential buildings must be available from sphere 1
-        self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
-        self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
-        self.multiworld.early_items[self.player]["Blueprint: Levee"] = 1
-        self.multiworld.early_items[self.player]["Blueprint: Gear Workshop"] = 1
+        # Essential buildings must be available from sphere 1 (if option enabled)
+        if self.options.force_early_items:
+            self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
+            self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
+            self.multiworld.early_items[self.player]["Blueprint: Levee"] = 1
+            self.multiworld.early_items[self.player]["Blueprint: Gear Workshop"] = 1
 
         # --- Boost items ---
         for name, classification in BOOSTS:
