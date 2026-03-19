@@ -270,13 +270,41 @@ MILESTONE_TIERS: dict[str, int] = {
 
 
 def _set_milestone_rules(world, player, mw, faction: str) -> None:
-    """Gate milestones by tier so they appear in proper logic spheres."""
+    """Gate milestones by tier so they appear in proper logic spheres.
+
+    In strict mode, survival milestones also require specific buildings
+    (Levee, Floodgate, Stairs, Medium Tank) that are practically needed
+    to survive droughts and badtides.
+    """
+    strict = world.options.logic_difficulty.value == 1
+
     for loc_name in world.active_milestones:
         tier = MILESTONE_TIERS.get(loc_name, 1)
         loc = mw.get_location(loc_name, player)
-        loc.access_rule = lambda state, p=player, t=tier, f=faction: (
-            _tier_predicate(t, state, p, f)
-        )
+
+        if strict and loc_name in STRICT_MILESTONE_REQUIREMENTS:
+            required = STRICT_MILESTONE_REQUIREMENTS[loc_name]
+            loc.access_rule = lambda state, p=player, t=tier, f=faction, req=required: (
+                _tier_predicate(t, state, p, f)
+                and all(has(state, p, bld) for bld in req)
+            )
+        else:
+            loc.access_rule = lambda state, p=player, t=tier, f=faction: (
+                _tier_predicate(t, state, p, f)
+            )
+
+
+# Strict-mode building requirements for survival milestones.
+# These buildings are practically necessary to survive the event in-game.
+STRICT_MILESTONE_REQUIREMENTS: dict[str, list[str]] = {
+    # Droughts — need water storage infrastructure
+    "Survival: Survive 5 Droughts":     ["Levee"],
+    "Survival: Survive 10 Droughts":    ["Levee", "Medium Tank"],
+    # Badtides — need flood control to contain contaminated water
+    "Survival: Survive 1st Badtide":    ["Levee", "Floodgate"],
+    "Survival: Survive 5 Badtides":     ["Levee", "Floodgate", "Stairs"],
+    "Survival: Survive 10 Badtides":    ["Levee", "Floodgate", "Stairs"],
+}
 
 
 def _resolve_goals(world) -> set[str]:

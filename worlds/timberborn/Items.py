@@ -130,14 +130,14 @@ SCIENCE_BLUEPRINTS = [
 
 # --- DISTRICT MANAGEMENT ---
 DISTRICT_BLUEPRINTS = [
-    ("Builders' Hut",               ItemClassification.progression), # 100  S
+    ("Builders' Hut",               ItemClassification.useful),      # 100  S
     ("District Crossing",           ItemClassification.useful),      # 600  S
 ]
 
 # --- WELLBEING ---
 WELLBEING_BLUEPRINTS = [
-    ("Shower",                      ItemClassification.useful),      # 50   F
-    ("Medical Bed",                 ItemClassification.useful),      # 80   S
+    ("Shower",                      ItemClassification.progression),  # 50   F
+    ("Medical Bed",                 ItemClassification.progression),  # 80   S
     ("Contemplation Spot",          ItemClassification.filler),      # 100  F
     ("Lido",                        ItemClassification.useful),      # 250  F
     ("Herbalist",                   ItemClassification.useful),      # 300  F

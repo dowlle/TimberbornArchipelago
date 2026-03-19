@@ -240,12 +240,29 @@ class ForceEarlyItems(Toggle):
     """
     When enabled, essential early-game blueprints (Forester, Stairs, Levee, Gear Workshop)
     are forced into the first reachable sphere, guaranteeing they are available right away.
+    Platform and Floodgate are progression items and will also appear early, but are not
+    forced into sphere 1 to avoid fill errors when milestones are disabled.
 
     When disabled, these items are placed freely like any other progression item and may
     appear anywhere in the multiworld. This makes the early game significantly harder and
     less predictable, but allows for more varied and challenging seeds.
     """
     display_name = "Force Early Items"
+    default = 1
+
+
+class LogicDifficulty(Choice):
+    """
+    Controls how strict the logic is for milestone accessibility.
+    - standard: Milestones are gated by tier only (lenient — assumes creative survival).
+    - strict: Survival milestones also require specific buildings
+      (e.g., badtide milestones require Levee + Floodgate, drought milestones require
+      water infrastructure). Ensures the solver places survival-critical items before
+      survival milestones become reachable.
+    """
+    display_name = "Logic Difficulty"
+    option_standard = 0
+    option_strict = 1
     default = 1
 
 
@@ -274,3 +291,4 @@ class TimberbornOptions(PerGameCommonOptions):
     include_survival_milestones: IncludeSurvivalMilestones
     include_wonder_milestone: IncludeWonderMilestone
     force_early_items: ForceEarlyItems
+    logic_difficulty: LogicDifficulty
