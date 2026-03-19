@@ -287,6 +287,60 @@ def _resolve_goals(world) -> set[str]:
     return goals
 
 
+def _goal_tier(goal_name: str, world) -> int:
+    """Return the logic tier required to achieve a client-tracked goal.
+
+    This gates Victory event locations so the solver knows what tech is
+    needed before the goal can be completed in-game.
+    """
+    if goal_name == "Population":
+        pop = world.options.population_goal.value
+        if pop <= 10:
+            return 1
+        if pop <= 50:
+            return 2
+        if pop <= 100:
+            return 3
+        if pop <= 200:
+            return 4
+        return 5
+    if goal_name == "Well-being":
+        wb = world.options.wellbeing_goal.value
+        if wb <= 5:
+            return 1
+        if wb <= 10:
+            return 2
+        if wb <= 15:
+            return 3
+        return 4
+    if goal_name == "Droughts":
+        d = world.options.drought_cycles_goal.value
+        if d <= 1:
+            return 1
+        if d <= 5:
+            return 2
+        if d <= 10:
+            return 3
+        return 4
+    if goal_name == "Badtides":
+        b = world.options.badtide_cycles_goal.value
+        if b <= 1:
+            return 2
+        if b <= 5:
+            return 3
+        return 4
+    if goal_name == "Bots":
+        return 5  # always requires bot production chain
+    if goal_name == "Water Storage":
+        ws = world.options.water_storage_goal.value
+        if ws <= 1000:
+            return 2
+        if ws <= 5000:
+            return 3
+        return 4
+    return 2  # safe default
+
+
 def _set_completion_condition(world, player, mw, faction: str) -> None:
     goals = _resolve_goals(world)
     world.resolved_goals = goals  # store for slot_data
@@ -309,6 +363,14 @@ def _set_completion_condition(world, player, mw, faction: str) -> None:
         event = f"Victory: {goal_name}"
         goal_checks.append(
             lambda state, p=player, ev=event: state.has(ev, p)
+        )
+
+        # Gate the Victory event location so the solver knows what tech is
+        # required before the goal can be achieved in-game.
+        tier = _goal_tier(goal_name, world)
+        event_loc = mw.get_location(event, player)
+        event_loc.access_rule = lambda state, p=player, t=tier, f=faction: (
+            _tier_predicate(t, state, p, f)
         )
 
     if not goal_checks:

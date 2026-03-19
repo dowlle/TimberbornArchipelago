@@ -152,9 +152,21 @@ class DroughtDifficulty(Range):
 
 
 class IncludeTraps(Toggle):
-    """If enabled, trap items (Early Drought, Hungry Beavers, Badwater Leak) can appear in the item pool."""
+    """If enabled, trap items (Early Drought, Hungry Beavers, Badwater Leak, Thirsty Beavers) can appear in the item pool."""
     display_name = "Include Traps"
     default = 1
+
+
+class TrapMode(Choice):
+    """
+    How weather traps (Early Drought, Badwater Leak) behave when hazardous weather is already active:
+    - queue: Weather traps wait until the current weather ends, then trigger in order.
+    - skip: Weather traps are discarded if weather is already active.
+    """
+    display_name = "Trap Mode"
+    option_queue = 0
+    option_skip = 1
+    default = 0
 
 
 class MaxScienceCost(Range):
@@ -252,6 +264,7 @@ class TimberbornOptions(PerGameCommonOptions):
     water_storage_goal: WaterStorageGoal
     drought_difficulty: DroughtDifficulty
     include_traps: IncludeTraps
+    trap_mode: TrapMode
     max_science_cost: MaxScienceCost
     science_cost_multiplier: ScienceCostMultiplier
     skip_count: SkipCount

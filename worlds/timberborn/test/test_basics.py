@@ -203,7 +203,7 @@ class TestNoSurvivalMilestones(TimberbornTestBase):
 
 
 class TestNoWonderMilestone(TimberbornTestBase):
-    options = {"include_wonder_milestone": 0, "goal": 1}
+    options = {"include_wonder_milestone": 0, "goal_selection": {"Population"}}
 
     def test_wonder_milestone_excluded(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
@@ -212,8 +212,8 @@ class TestNoWonderMilestone(TimberbornTestBase):
 
 
 class TestWonderForceEnabled(TimberbornTestBase):
-    """When goal is complete_wonder (0), Wonder milestone is force-enabled even if toggled off."""
-    options = {"include_wonder_milestone": 0, "goal": 0}
+    """When goal is Wonder, Wonder milestone is force-enabled even if toggled off."""
+    options = {"include_wonder_milestone": 0, "goal_selection": {"Wonder"}}
 
     def test_wonder_milestone_present(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
@@ -226,7 +226,7 @@ class TestAllMilestonesDisabled(TimberbornTestBase):
         "include_wellbeing_milestones": 0,
         "include_survival_milestones": 0,
         "include_wonder_milestone": 0,
-        "goal": 1,
+        "goal_selection": {"Population"},
     }
 
     def test_no_milestones(self):
@@ -322,8 +322,8 @@ class TestITBranchingGeneration(TimberbornITTestBase):
 
 
 class TestITWonderForceEnabled(TimberbornITTestBase):
-    """When goal is complete_wonder, IT Wonder milestone is force-enabled."""
-    options = {"faction": 1, "include_wonder_milestone": 0, "goal": 0}
+    """When goal is Wonder, IT Wonder milestone is force-enabled."""
+    options = {"faction": 1, "include_wonder_milestone": 0, "goal_selection": {"Wonder"}}
 
     def test_it_wonder_milestone_present(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}

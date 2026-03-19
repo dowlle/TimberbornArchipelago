@@ -2,7 +2,7 @@ from . import TimberbornTestBase
 
 
 class TestCompleteWonder(TimberbornTestBase):
-    options = {"goal": 0}
+    options = {"goal_selection": {"Wonder"}}
 
     def test_wonder_location_exists(self):
         loc_names = {loc.name for loc in self.multiworld.get_locations(self.player)}
@@ -10,21 +10,21 @@ class TestCompleteWonder(TimberbornTestBase):
 
 
 class TestReachPopulation(TimberbornTestBase):
-    options = {"goal": 1, "population_goal": 50}
+    options = {"goal_selection": {"Population"}, "population_goal": 50}
 
     def test_slot_data_goal(self):
         slot_data = self.world.fill_slot_data()
-        self.assertEqual(slot_data["goal"], 1)
+        self.assertIn("Population", slot_data["goals"])
         self.assertEqual(slot_data["population_goal"], 50)
 
 
 class TestSurviveCycles(TimberbornTestBase):
-    options = {"goal": 2, "survival_cycles_goal": 10}
+    options = {"goal_selection": {"Droughts"}, "drought_cycles_goal": 10}
 
     def test_slot_data_goal(self):
         slot_data = self.world.fill_slot_data()
-        self.assertEqual(slot_data["goal"], 2)
-        self.assertEqual(slot_data["survival_cycles_goal"], 10)
+        self.assertIn("Droughts", slot_data["goals"])
+        self.assertEqual(slot_data["drought_cycles_goal"], 10)
 
 
 class TestIncludeTraps(TimberbornTestBase):

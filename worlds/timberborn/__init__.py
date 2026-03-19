@@ -4,7 +4,8 @@ from worlds.AutoWorld import World, WebWorld
 from BaseClasses import Region, Location, Item, ItemClassification, Tutorial, CollectionState
 from .Items import (TimberbornItem, item_table, item_name_to_id,
                     get_blueprint_items, get_building_names,
-                    BLUEPRINT_ITEMS, FILLER_ITEMS, TRAP_ITEMS, BOOSTS)
+                    BLUEPRINT_ITEMS, FILLER_ITEMS, TRAP_ITEMS, BOOSTS,
+                    SCOUT_ITEMS)
 from .Locations import (TimberbornLocation, location_table, location_name_to_id,
                         ALL_BUILDING_NAMES,
                         POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
@@ -203,6 +204,13 @@ class TimberbornWorld(World):
             self.multiworld.itempool.append(self.create_item(name))
             items_created += 1
 
+        # --- Scout items ---
+        for name, classification in SCOUT_ITEMS:
+            if items_created >= unfilled:
+                break
+            self.multiworld.itempool.append(self.create_item(name))
+            items_created += 1
+
         # --- Skip items ---
         for _ in range(self.options.skip_count.value):
             if items_created >= unfilled:
@@ -268,6 +276,7 @@ class TimberbornWorld(World):
             "goal_requirement": self.options.goal_requirement.value,  # 0=any, 1=all
             "randomization_style": self.options.randomization_style.value,
             "include_traps": bool(self.options.include_traps.value),
+            "trap_mode": self.options.trap_mode.value,  # 0=queue, 1=skip
             "population_goal": self.options.population_goal.value,
             "population_mode": self.options.population_mode.value,
             "drought_cycles_goal": self.options.drought_cycles_goal.value,

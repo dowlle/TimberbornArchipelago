@@ -9,6 +9,7 @@ from BaseClasses import Item, ItemClassification
 #   9_220_000 – 9_229_999 : Trap items
 #   9_230_000 – 9_239_999 : Skip items
 #   9_240_000 – 9_249_999 : Progressive items
+#   9_250_000 – 9_259_999 : Scout items
 # ---------------------------------------------------------------------------
 FT_BLUEPRINT_BASE  = 9_000_000
 IT_BLUEPRINT_BASE  = 9_100_000
@@ -17,6 +18,7 @@ FILLER_BASE        = 9_210_000
 TRAP_BASE          = 9_220_000
 SKIP_BASE          = 9_230_000
 PROGRESSIVE_BASE   = 9_240_000
+SCOUT_BASE         = 9_250_000
 
 
 class TimberbornItem(Item):
@@ -422,6 +424,16 @@ BOOSTS: list[tuple[str, ItemClassification]] = [
 ]
 
 # ---------------------------------------------------------------------------
+# Scout items — reveal building names on a shop path
+# ---------------------------------------------------------------------------
+SCOUT_ITEMS: list[tuple[str, ItemClassification]] = [
+    ("Scout: Path A",                       ItemClassification.useful),
+    ("Scout: Path B",                       ItemClassification.useful),
+    ("Scout: Path C",                       ItemClassification.useful),
+    ("Scout: Path D",                       ItemClassification.useful),
+]
+
+# ---------------------------------------------------------------------------
 # Filler — resource care packages delivered to nearest District Center
 # ---------------------------------------------------------------------------
 FILLER_ITEMS: list[tuple[str, ItemClassification, int]] = [
@@ -442,6 +454,7 @@ TRAP_ITEMS: list[tuple[str, ItemClassification, int]] = [
     ("Trap: Early Drought",             ItemClassification.trap,     3),
     ("Trap: Hungry Beavers",            ItemClassification.trap,     3),
     ("Trap: Badwater Leak",             ItemClassification.trap,     2),
+    ("Trap: Thirsty Beavers",           ItemClassification.trap,     2),
 ]
 
 # ---------------------------------------------------------------------------
@@ -471,6 +484,14 @@ for i, (name, classification) in enumerate(BOOSTS):
         "classification": classification,
         "count": 1,
         "id": BOOST_BASE + i,
+    }
+
+# Scouts
+for i, (name, classification) in enumerate(SCOUT_ITEMS):
+    item_table[name] = {
+        "classification": classification,
+        "count": 1,
+        "id": SCOUT_BASE + i,
     }
 
 # Filler
