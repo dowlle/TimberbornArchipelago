@@ -1,0 +1,4 @@
+# Dev-only directories — not shipped in the .apworld
+/test
+/scripts
+/docs
