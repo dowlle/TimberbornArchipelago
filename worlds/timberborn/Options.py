@@ -114,8 +114,7 @@ class BadtideCyclesGoal(Range):
 
 
 class WellbeingGoal(Range):
-    """When 'Well-being' goal is active, the average well-being level to reach.
-    NOTE: Client-side tracking is not yet implemented."""
+    """When 'Well-being' goal is active, the average well-being level to reach."""
     display_name = "Well-being Goal"
     range_start = 5
     range_end = 20
@@ -123,8 +122,7 @@ class WellbeingGoal(Range):
 
 
 class BotsGoal(Range):
-    """When 'Bots' goal is active, the number of bots to construct.
-    NOTE: Client-side tracking is not yet implemented."""
+    """When 'Bots' goal is active, the number of bots to construct."""
     display_name = "Bots Goal"
     range_start = 1
     range_end = 50
@@ -132,8 +130,7 @@ class BotsGoal(Range):
 
 
 class WaterStorageGoal(Range):
-    """When 'Water Storage' goal is active, the water storage capacity to reach.
-    NOTE: Client-side tracking is not yet implemented."""
+    """When 'Water Storage' goal is active, the water storage capacity to reach."""
     display_name = "Water Storage Goal"
     range_start = 500
     range_end = 50000

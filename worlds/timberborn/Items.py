@@ -418,7 +418,7 @@ BOOSTS: list[tuple[str, ItemClassification]] = [
     ("Boost: Faster Movement Speed",        ItemClassification.useful),
     ("Boost: Increased Carrying Capacity",  ItemClassification.useful),
     ("Boost: Faster Working Speed",         ItemClassification.useful),
-    ("Boost: Faster Tree Growth",           ItemClassification.useful),
+    ("Boost: Faster Beaver Growth",         ItemClassification.useful),
     ("Boost: Longer Life Expectancy",       ItemClassification.useful),
     ("Boost: Better Woodcutting Chance",    ItemClassification.useful),
 ]
