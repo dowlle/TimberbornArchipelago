@@ -211,21 +211,33 @@ class TimberbornWorld(World):
             self.multiworld.itempool.append(self.create_item(name))
             items_created += 1
 
-        # --- Skip items ---
-        for _ in range(self.options.skip_count.value):
-            if items_created >= unfilled:
-                break
+        # --- Dynamic skip & trap counts ---
+        # Remaining slots after blueprints + boosts + scouts are split between
+        # skips, traps, and filler.  Skips and traps are capped to fit.
+        remaining = unfilled - items_created
+        skip_requested = self.options.skip_count.value
+        trap_requested = sum(c for _, _, c in TRAP_ITEMS) if self.options.include_traps else 0
+        total_requested = skip_requested + trap_requested
+
+        if total_requested > remaining:
+            # Scale both down proportionally, skips first
+            skip_actual = min(skip_requested, remaining // 2)
+            trap_actual = min(trap_requested, remaining - skip_actual)
+        else:
+            skip_actual = skip_requested
+            trap_actual = trap_requested
+
+        for _ in range(skip_actual):
             self.multiworld.itempool.append(self.create_item("Skip"))
             items_created += 1
 
-        # --- Trap items (only if option enabled) ---
-        if self.options.include_traps:
-            for name, classification, count in TRAP_ITEMS:
-                for _ in range(count):
-                    if items_created >= unfilled:
-                        break
-                    self.multiworld.itempool.append(self.create_item(name))
-                    items_created += 1
+        if trap_actual > 0:
+            # Build flat trap list and trim to budget
+            trap_pool = [name for name, _, count in TRAP_ITEMS for _ in range(count)]
+            self.random.shuffle(trap_pool)
+            for name in trap_pool[:trap_actual]:
+                self.multiworld.itempool.append(self.create_item(name))
+                items_created += 1
 
         # --- Filler — pad to match location count ---
         filler_needed = unfilled - items_created
