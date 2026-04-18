@@ -23,7 +23,7 @@ The goal is configurable:
 - **Passive Boosts** — faster movement, increased carrying capacity, faster working speed, faster tree growth, longer life expectancy.
 - **Skip** — lets you check a shop location for free (bypasses science cost).
 - **Filler** — resource care packages (50 Logs, 20 Planks, etc.).
-- **Traps** *(optional)* — negative effects like *Early Drought* or *Hungry Beavers*.
+- **Traps** *(optional)* — negative effects like *Hazardous Weather* (triggers an early drought or badtide) or *Hungry Beavers*.
 
 ## What does another player's item look like in my game?
 

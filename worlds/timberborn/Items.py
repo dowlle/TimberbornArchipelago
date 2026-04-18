@@ -451,9 +451,11 @@ FILLER_ITEMS: list[tuple[str, ItemClassification, int]] = [
 # Traps — negative effects sent from/to other players
 # ---------------------------------------------------------------------------
 TRAP_ITEMS: list[tuple[str, ItemClassification, int]] = [
-    ("Trap: Early Drought",             ItemClassification.trap,     3),
+    # Consolidated weather trap: the game's own HazardousWeatherRandomizer
+    # picks drought or badtide based on map conditions. Replaces the previous
+    # separate "Trap: Early Drought" and "Trap: Badwater Leak" entries.
+    ("Trap: Hazardous Weather",         ItemClassification.trap,     5),
     ("Trap: Hungry Beavers",            ItemClassification.trap,     3),
-    ("Trap: Badwater Leak",             ItemClassification.trap,     2),
     ("Trap: Thirsty Beavers",           ItemClassification.trap,     2),
 ]
 

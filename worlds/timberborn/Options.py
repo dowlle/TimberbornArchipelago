@@ -149,14 +149,14 @@ class DroughtDifficulty(Range):
 
 
 class IncludeTraps(Toggle):
-    """If enabled, trap items (Early Drought, Hungry Beavers, Badwater Leak, Thirsty Beavers) can appear in the item pool."""
+    """If enabled, trap items (Hazardous Weather, Hungry Beavers, Thirsty Beavers) can appear in the item pool."""
     display_name = "Include Traps"
     default = 1
 
 
 class TrapMode(Choice):
     """
-    How weather traps (Early Drought, Badwater Leak) behave when hazardous weather is already active:
+    How Hazardous Weather traps behave when a hazardous cycle is already active or pending:
     - queue: Weather traps wait until the current weather ends, then trigger in order.
     - skip: Weather traps are discarded if weather is already active.
     """
