@@ -142,7 +142,7 @@ IT_FREE_BUILDINGS = [
 MILESTONE_TIERS: dict[int, list[str]] = {
     1: [
         "First Beaver Born", "First Beaver Grown Up",
-        "Reach 10 Beavers", "Well-being Lv5", "Survive 1st Drought",
+        "Reach 15 Beavers", "Well-being Lv5", "Survive 1st Drought",
     ],
     2: [
         "Reach 25 Beavers", "Reach 50 Beavers",

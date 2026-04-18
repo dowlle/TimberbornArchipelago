@@ -156,7 +156,7 @@ ALL_BUILDING_NAMES: list[str] = (
 POPULATION_LOCATIONS: list[str] = [
     "Population: First Beaver Born",
     "Population: First Beaver Grown Up",
-    "Population: Reach 10 Beavers",
+    "Population: Reach 15 Beavers",
     "Population: Reach 25 Beavers",
     "Population: Reach 50 Beavers",
     "Population: Reach 100 Beavers",

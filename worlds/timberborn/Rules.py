@@ -246,7 +246,7 @@ MILESTONE_TIERS: dict[str, int] = {
     # Population
     "Population: First Beaver Born":    1,
     "Population: First Beaver Grown Up": 1,
-    "Population: Reach 10 Beavers":     1,
+    "Population: Reach 15 Beavers":     1,
     "Population: Reach 25 Beavers":     2,
     "Population: Reach 50 Beavers":     2,
     "Population: Reach 100 Beavers":    3,
