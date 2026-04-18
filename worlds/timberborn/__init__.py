@@ -12,7 +12,8 @@ from .Locations import (TimberbornLocation, location_table, location_name_to_id,
                         SURVIVAL_LOCATIONS, FT_WONDER_LOCATIONS,
                         IT_WONDER_LOCATIONS)
 from .Options import TimberbornOptions
-from .ProgressiveItems import get_progressive_chains
+from .ProgressiveItems import get_progressive_chains, get_building_to_progressive
+from .BuildingTiers import get_building_tier
 from .Rules import set_rules
 
 
@@ -197,6 +198,13 @@ class TimberbornWorld(World):
             self.multiworld.early_items[self.player]["Blueprint: Levee"] = 1
             self.multiworld.early_items[self.player]["Blueprint: Gear Workshop"] = 1
 
+            # Randomly sample survival buildings into early spheres.
+            # Each category picks 1 random candidate per seed for variety.
+            # Only picks buildings whose construction tier is achievable from
+            # the already-forced early items (Gear Workshop → T2 is buildable).
+            if self.options.extra_early_survival:
+                self._force_random_early_survival()
+
         # --- Boost items ---
         for name, classification in BOOSTS:
             if items_created >= unfilled:
@@ -246,6 +254,56 @@ class TimberbornWorld(World):
             for i in range(filler_needed):
                 name = filler_cycle[i % len(filler_cycle)]
                 self.multiworld.itempool.append(self.create_item(name))
+
+    # -----------------------------------------------------------------
+    # Early survival items — random per seed
+    # -----------------------------------------------------------------
+
+    # Categories of buildings that help early survival.
+    # Picked from per seed so each run feels different.
+    _EARLY_SURVIVAL_CATEGORIES: dict[str, dict[str, list[str]]] = {
+        "Folktails": {
+            "housing":   ["Mini Lodge", "Double Lodge", "Triple Lodge"],
+            "food":      ["Aquatic Farmhouse", "Gristmill", "Beehive"],
+            "wellbeing": ["Lido", "Herbalist"],
+        },
+        "IronTeeth": {
+            "housing":   ["Rowhouse", "Large Barrack", "Large Rowhouse"],
+            # IT has no low-tier food buildings; free FarmHouse covers basics
+            "wellbeing": ["Double Shower", "Scratcher", "Swimming Pool"],
+        },
+    }
+
+    def _force_random_early_survival(self) -> None:
+        """Pick one random building per survival category into early items.
+
+        Only considers buildings whose construction tier is achievable
+        from the already-forced early items (Gear Workshop is forced,
+        so T1-T2 are buildable).  Skips buildings consumed by active
+        progressive chains — those arrive as progressive items instead.
+
+        Milestones provide extra sphere-0 locations.  Without them,
+        only 4 shop slots are reachable and the core 4 early items
+        already fill those, so we skip the extras to avoid fill errors.
+        """
+        if not self.active_milestones:
+            return
+
+        max_early_tier = 2  # Gear Workshop is forced -> T2 is buildable
+        categories = self._EARLY_SURVIVAL_CATEGORIES.get(self.faction, {})
+        prog_buildings = get_building_to_progressive(
+            self.faction, bool(self._progressive_chains))
+
+        for cat_name, candidates in categories.items():
+            eligible = [
+                b for b in candidates
+                if get_building_tier(b, self.faction) <= max_early_tier
+                and b not in prog_buildings
+            ]
+            if not eligible:
+                continue
+            pick = self.random.choice(eligible)
+            self.multiworld.early_items[self.player][f"Blueprint: {pick}"] = 1
 
     def create_item(self, name: str) -> Item:
         data = item_table[name]

@@ -248,6 +248,21 @@ class ForceEarlyItems(Toggle):
     default = 1
 
 
+class ExtraEarlySurvival(Toggle):
+    """
+    When enabled (alongside Force Early Items), one random survival building per category
+    — housing, food, wellbeing — is forced into sphere 1 on top of the core essentials.
+    Each seed picks different candidates so runs stay varied. Requires milestones enabled
+    to avoid fill errors.
+
+    Designed to fix the "useful item scatter" problem where basic housing/food/wellbeing
+    buildings can otherwise arrive very late in the multiworld. Disable for lean seeds
+    that only force the core 4 progression items.
+    """
+    display_name = "Extra Early Survival"
+    default = 1
+
+
 class LogicDifficulty(Choice):
     """
     Controls how strict the logic is for milestone accessibility.
@@ -288,4 +303,5 @@ class TimberbornOptions(PerGameCommonOptions):
     include_survival_milestones: IncludeSurvivalMilestones
     include_wonder_milestone: IncludeWonderMilestone
     force_early_items: ForceEarlyItems
+    extra_early_survival: ExtraEarlySurvival
     logic_difficulty: LogicDifficulty
