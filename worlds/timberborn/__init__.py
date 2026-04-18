@@ -282,11 +282,19 @@ class TimberbornWorld(World):
         so T1-T2 are buildable).  Skips buildings consumed by active
         progressive chains — those arrive as progressive items instead.
 
-        Milestones provide extra sphere-0 locations.  Without them,
-        only 4 shop slots are reachable and the core 4 early items
-        already fill those, so we skip the extras to avoid fill errors.
+        Population milestones provide the sphere-1 budget we need: three
+        T1 milestone locations (First Beaver Born, First Beaver Grown Up,
+        Reach 15 Beavers) on top of the 4 tier-1 shop slots gives us
+        ~7 sphere-1 reachable locations, enough to absorb the 4 core
+        forced items plus up to 3 random survival extras.
+
+        Wellbeing and survival milestones each only contribute 1 T1 slot,
+        and the wonder milestone is T5. Without population milestones,
+        fill overflows on grand_chaos / restrictive configs. Skip extras
+        entirely unless population milestones are enabled -- the 2026-04-18
+        fuzz run caught ~3% failure rate when this guard was missing.
         """
-        if not self.active_milestones:
+        if not self.options.include_population_milestones:
             return
 
         max_early_tier = 2  # Gear Workshop is forced -> T2 is buildable
