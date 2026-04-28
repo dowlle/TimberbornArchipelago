@@ -37,6 +37,16 @@ setups
 build
 bundle/components.wxs
 dist
+
+# Timberborn AP build artifact (produced by scripts/build-release-assets.py
+# in the parent TimberbornAP repo; distributed via GitHub release assets,
+# not tracked in source).
+worlds/timberborn.apworld
+
+# Timberborn AP extraction-script output (worlds/timberborn/scripts/
+# extract_building_tiers.py drops this; diagnostic only, not authoritative
+# data).
+worlds/timberborn/scripts/extraction_output.txt
 /prof/
 README.html
 .vs/
