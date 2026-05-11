@@ -338,9 +338,11 @@ def _goal_tier(goal_name: str, world) -> int:
             return 1
         if wb <= 10:
             return 2
-        if wb <= 15:
+        if wb <= 20:
             return 3
-        return 4
+        if wb <= 35:
+            return 4
+        return 5
     if goal_name == "Droughts":
         d = world.options.drought_cycles_goal.value
         if d <= 1:

@@ -114,10 +114,11 @@ class BadtideCyclesGoal(Range):
 
 
 class WellbeingGoal(Range):
-    """When 'Well-being' goal is active, the average well-being level to reach."""
+    """When 'Well-being' goal is active, the average well-being level to reach.
+    In-game well-being ranges from roughly 0 to 50 in a mature settlement."""
     display_name = "Well-being Goal"
     range_start = 5
-    range_end = 20
+    range_end = 50
     default = 15
 
 
