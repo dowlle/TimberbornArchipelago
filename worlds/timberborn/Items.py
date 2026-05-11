@@ -97,7 +97,7 @@ LANDSCAPING_BLUEPRINTS = [
     ("Triple Floodgate",            ItemClassification.useful),      # 500  S
     ("Dynamite",                    ItemClassification.useful),      # 600  S
     ("Double Dynamite",             ItemClassification.useful),      # 900  S
-    ("Terrain Block",               ItemClassification.filler),      # 1000 S
+    ("Terrain Block",               ItemClassification.useful),      # 1000 S
     ("Triple Dynamite",             ItemClassification.useful),      # 1200 S
     ("Dirt Excavator",              ItemClassification.useful),      # 2000 S
     ("Tunnel",                      ItemClassification.useful),      # 2000 S
@@ -112,7 +112,7 @@ METAL_BLUEPRINTS = [
 
 # --- POWER ---
 POWER_BLUEPRINTS = [
-    ("Vertical Power Shaft",        ItemClassification.filler),      # 40   S
+    ("Vertical Power Shaft",        ItemClassification.useful),      # 40   S
     ("Wind Turbine",                ItemClassification.progression), # 120  F
     ("Geothermal Engine",           ItemClassification.progression), # 160  S
     ("Clutch",                      ItemClassification.useful),      # 400  S
@@ -138,7 +138,7 @@ DISTRICT_BLUEPRINTS = [
 WELLBEING_BLUEPRINTS = [
     ("Shower",                      ItemClassification.progression),  # 50   F
     ("Medical Bed",                 ItemClassification.progression),  # 80   S
-    ("Contemplation Spot",          ItemClassification.filler),      # 100  F
+    ("Contemplation Spot",          ItemClassification.useful),      # 100  F
     ("Lido",                        ItemClassification.useful),      # 250  F
     ("Herbalist",                   ItemClassification.useful),      # 300  F
     ("Agora",                       ItemClassification.useful),      # 400  F
@@ -162,16 +162,16 @@ PATH_BLUEPRINTS = [
     ("Suspension Bridge 3x1",       ItemClassification.useful),      # 400  S
     ("Zipline Pylon",               ItemClassification.useful),      # 500  F
     ("Overhang 3x1",                ItemClassification.useful),      # 550  S
-    ("Suspension Bridge 4x1",       ItemClassification.filler),      # 600  S
+    ("Suspension Bridge 4x1",       ItemClassification.useful),      # 600  S
     ("Zipline Beam",                ItemClassification.useful),      # 600  F
     ("Zipline Station",             ItemClassification.useful),      # 700  F
-    ("Metal Platform 3x3",          ItemClassification.filler),      # 1000 S
-    ("Overhang 4x1",                ItemClassification.filler),      # 1000 S
-    ("Suspension Bridge 5x1",       ItemClassification.filler),      # 1000 S
-    ("Overhang 5x1",                ItemClassification.filler),      # 1800 S
-    ("Suspension Bridge 6x1",       ItemClassification.filler),      # 1800 S
-    ("Metal Platform 5x5",          ItemClassification.filler),      # 2000 S
-    ("Overhang 6x1",                ItemClassification.filler),      # 3000 S
+    ("Metal Platform 3x3",          ItemClassification.useful),      # 1000 S
+    ("Overhang 4x1",                ItemClassification.useful),      # 1000 S
+    ("Suspension Bridge 5x1",       ItemClassification.useful),      # 1000 S
+    ("Overhang 5x1",                ItemClassification.useful),      # 1800 S
+    ("Suspension Bridge 6x1",       ItemClassification.useful),      # 1800 S
+    ("Metal Platform 5x5",          ItemClassification.useful),      # 2000 S
+    ("Overhang 6x1",                ItemClassification.useful),      # 3000 S
 ]
 
 # --- AUTOMATION ---
@@ -181,41 +181,41 @@ AUTOMATION_BLUEPRINTS = [
     ("Flow Sensor",                 ItemClassification.useful),      # 100  S
     ("Chronometer",                 ItemClassification.useful),      # 150  S
     ("Depth Sensor",                ItemClassification.useful),      # 200  S
-    ("Population Counter",          ItemClassification.filler),      # 200  S
-    ("Resource Counter",            ItemClassification.filler),      # 250  S
-    ("Science Counter",             ItemClassification.filler),      # 300  S
+    ("Population Counter",          ItemClassification.useful),      # 200  S
+    ("Resource Counter",            ItemClassification.useful),      # 250  S
+    ("Science Counter",             ItemClassification.useful),      # 300  S
     ("Weather Station",             ItemClassification.useful),      # 300  S
     ("Contamination Sensor",        ItemClassification.useful),      # 400  S
-    ("Indicator",                   ItemClassification.filler),      # 400  S
-    ("Speaker",                     ItemClassification.filler),      # 500  S
+    ("Indicator",                   ItemClassification.useful),      # 400  S
+    ("Speaker",                     ItemClassification.useful),      # 500  S
     ("Power Meter",                 ItemClassification.useful),      # 600  S
     ("Timer",                       ItemClassification.useful),      # 600  S
-    ("Firework Launcher",           ItemClassification.filler),      # 700  S
+    ("Firework Launcher",           ItemClassification.useful),      # 700  S
     ("Memory",                      ItemClassification.useful),      # 1000 S
     ("Detonator",                   ItemClassification.useful),      # 1400 S
-    ("HTTP Lever",                  ItemClassification.filler),      # 5000 S
-    ("HTTP Adapter",                ItemClassification.filler),      # 7500 S
+    ("HTTP Lever",                  ItemClassification.useful),      # 5000 S
+    ("HTTP Adapter",                ItemClassification.useful),      # 7500 S
 ]
 
 # --- DECORATION ---
 DECORATION_BLUEPRINTS = [
-    ("Roof 1x1",                    ItemClassification.filler),      # 60   S
-    ("Bench",                       ItemClassification.filler),      # 80   S
-    ("Roof 1x2",                    ItemClassification.filler),      # 80   S
-    ("Lantern",                     ItemClassification.filler),      # 100  S
-    ("Hammock",                     ItemClassification.filler),      # 120  F
-    ("Roof 2x2",                    ItemClassification.filler),      # 120  S
-    ("Hedge",                       ItemClassification.filler),      # 150  F
-    ("Roof 2x3",                    ItemClassification.filler),      # 150  S
-    ("Roof 3x2",                    ItemClassification.filler),      # 150  S
-    ("Stream Gauge",                ItemClassification.filler),      # 150  S
-    ("Wood Fence",                  ItemClassification.filler),      # 150  S
-    ("Scarecrow",                   ItemClassification.filler),      # 200  F
-    ("Weathervane",                 ItemClassification.filler),      # 250  F
-    ("Beaver Statue",               ItemClassification.filler),      # 500  S
-    ("Bulletin Pole",               ItemClassification.filler),      # 600  F
-    ("Pole Banner",                 ItemClassification.filler),      # 700  S
-    ("Square Banner",               ItemClassification.filler),      # 700  S
+    ("Roof 1x1",                    ItemClassification.useful),      # 60   S
+    ("Bench",                       ItemClassification.useful),      # 80   S
+    ("Roof 1x2",                    ItemClassification.useful),      # 80   S
+    ("Lantern",                     ItemClassification.useful),      # 100  S
+    ("Hammock",                     ItemClassification.useful),      # 120  F
+    ("Roof 2x2",                    ItemClassification.useful),      # 120  S
+    ("Hedge",                       ItemClassification.useful),      # 150  F
+    ("Roof 2x3",                    ItemClassification.useful),      # 150  S
+    ("Roof 3x2",                    ItemClassification.useful),      # 150  S
+    ("Stream Gauge",                ItemClassification.useful),      # 150  S
+    ("Wood Fence",                  ItemClassification.useful),      # 150  S
+    ("Scarecrow",                   ItemClassification.useful),      # 200  F
+    ("Weathervane",                 ItemClassification.useful),      # 250  F
+    ("Beaver Statue",               ItemClassification.useful),      # 500  S
+    ("Bulletin Pole",               ItemClassification.useful),      # 600  F
+    ("Pole Banner",                 ItemClassification.useful),      # 700  S
+    ("Square Banner",               ItemClassification.useful),      # 700  S
 ]
 
 # --- FOLKTAILS MONUMENTS (pre-Wonder) ---
@@ -337,11 +337,11 @@ IT_PATH_BLUEPRINTS = [
 
 # --- IT DECORATION ---
 IT_DECORATION_BLUEPRINTS = [
-    ("Brazier",                     ItemClassification.filler),      # 150
-    ("Metal Fence",                 ItemClassification.filler),      # 150
-    ("Beaver Bust",                 ItemClassification.filler),      # 200
-    ("Bell",                        ItemClassification.filler),      # 500
-    ("Decorative Clock",            ItemClassification.filler),      # 600
+    ("Brazier",                     ItemClassification.useful),      # 150
+    ("Metal Fence",                 ItemClassification.useful),      # 150
+    ("Beaver Bust",                 ItemClassification.useful),      # 200
+    ("Bell",                        ItemClassification.useful),      # 500
+    ("Decorative Clock",            ItemClassification.useful),      # 600
 ]
 
 # --- IT MONUMENTS (pre-Wonder) ---
