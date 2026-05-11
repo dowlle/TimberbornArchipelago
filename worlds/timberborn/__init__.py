@@ -10,7 +10,7 @@ from .Locations import (TimberbornLocation, location_table, location_name_to_id,
                         ALL_BUILDING_NAMES,
                         POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
                         SURVIVAL_LOCATIONS, FT_WONDER_LOCATIONS,
-                        IT_WONDER_LOCATIONS)
+                        IT_WONDER_LOCATIONS, RESOURCE_MILESTONE_LOCATIONS)
 from .Options import TimberbornOptions
 from .ProgressiveItems import get_progressive_chains, get_building_to_progressive
 from .BuildingTiers import get_building_tier
@@ -29,7 +29,35 @@ def _milestone_type(name: str) -> str:
         return "survival"
     elif name.startswith("Wonder:"):
         return "wonder"
+    elif name.startswith("Resource:"):
+        return "resource"
     return "unknown"
+
+
+# Maps resource milestone display name to game GoodId string.
+# Display names match the second word in the milestone name after "Reach N ".
+_RESOURCE_GOOD_IDS: dict[str, str] = {
+    "Logs":           "Log",
+    "Planks":         "Plank",
+    "Gears":          "Gear",
+    "Bread":          "Bread",
+    "Metal Blocks":   "MetalBlock",
+    "Treated Planks": "TreatedPlank",
+    "Scrap Metal":    "ScrapMetal",
+}
+
+
+def _milestone_good_id(name: str) -> str:
+    """For Resource: milestones, return the game GoodId string. Empty for non-resource."""
+    if not name.startswith("Resource:"):
+        return ""
+    # "Resource: Reach 500 Logs" -> "Logs"
+    # "Resource: Reach 100 Metal Blocks" -> "Metal Blocks"
+    m = re.search(r"Reach \d+ (.+)$", name)
+    if not m:
+        return ""
+    display = m.group(1)
+    return _RESOURCE_GOOD_IDS.get(display, "")
 
 
 def _milestone_threshold(name: str) -> int:
@@ -118,6 +146,8 @@ class TimberbornWorld(World):
         wonder_locs = IT_WONDER_LOCATIONS if self.faction == "IronTeeth" else FT_WONDER_LOCATIONS
         if self.options.include_wonder_milestone or "Wonder" in self.options.goal_selection.value:
             self.active_milestones.extend(wonder_locs)
+        if self.options.include_resource_milestones:
+            self.active_milestones.extend(RESOURCE_MILESTONE_LOCATIONS)
 
         for loc_name in self.active_milestones:
             loc_id = location_name_to_id[loc_name]
@@ -387,6 +417,7 @@ class TimberbornWorld(World):
                     "location_id": location_name_to_id[loc_name],
                     "type": _milestone_type(loc_name),
                     "threshold": _milestone_threshold(loc_name),
+                    "good_id": _milestone_good_id(loc_name),  # non-empty for resource milestones
                 }
                 for loc_name in self.active_milestones
             ],

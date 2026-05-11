@@ -66,11 +66,13 @@ class TestDefaultGeneration(TimberbornTestBase):
     def test_total_location_count(self):
         self.assertEqual(len(ALL_BUILDING_NAMES), 126)
         self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 19)  # 18 FT + 1 IT wonder
-        # Total pre-allocated shop slots + all milestones (both factions)
+        from ..Locations import RESOURCE_MILESTONE_LOCATIONS
+        # Total: pre-allocated shop slots + milestone locations + resource milestone locations
         total = len(location_name_to_id)
         expected_slots = 4 * 40  # NUM_PATHS * SLOTS_PER_PATH
-        self.assertEqual(total, expected_slots + 19,
-                         f"Expected {expected_slots + 19} total location IDs, got {total}")
+        expected = expected_slots + 19 + len(RESOURCE_MILESTONE_LOCATIONS)
+        self.assertEqual(total, expected,
+                         f"Expected {expected} total location IDs, got {total}")
 
     def test_no_duplicate_item_ids(self):
         ids = list(item_name_to_id.values())
@@ -256,9 +258,12 @@ class TestAllMilestonesDisabled(TimberbornTestBase):
 
 class TestSlotDataMilestones(TimberbornTestBase):
     def test_milestones_in_slot_data(self):
+        from ..Locations import RESOURCE_MILESTONE_LOCATIONS
         slot_data = self.world.fill_slot_data()
         self.assertIn("milestones", slot_data)
-        self.assertEqual(len(slot_data["milestones"]), 18)
+        # 7 pop + 4 wellbeing + 6 survival + 1 FT wonder + 13 resource = 31
+        expected = 18 + len(RESOURCE_MILESTONE_LOCATIONS)
+        self.assertEqual(len(slot_data["milestones"]), expected)
 
     def test_milestone_metadata_fields(self):
         slot_data = self.world.fill_slot_data()
@@ -267,8 +272,13 @@ class TestSlotDataMilestones(TimberbornTestBase):
             self.assertIn("location_id", ms)
             self.assertIn("type", ms)
             self.assertIn("threshold", ms)
-            self.assertIn(ms["type"], {"population", "wellbeing", "survival", "wonder"})
+            self.assertIn("good_id", ms)
+            self.assertIn(ms["type"], {"population", "wellbeing", "survival", "wonder", "resource"})
             self.assertGreater(ms["threshold"], 0)
+            # Resource milestones must have a non-empty good_id
+            if ms["type"] == "resource":
+                self.assertTrue(len(ms["good_id"]) > 0,
+                                f"Resource milestone missing good_id: {ms['name']}")
 
 
 # ---------------------------------------------------------------------------
@@ -427,9 +437,11 @@ class TestProgressiveItemsIT(TimberbornITTestBase):
 
 class TestITSlotDataMilestones(TimberbornITTestBase):
     def test_milestones_in_slot_data(self):
+        from ..Locations import RESOURCE_MILESTONE_LOCATIONS
         slot_data = self.world.fill_slot_data()
         self.assertIn("milestones", slot_data)
-        self.assertEqual(len(slot_data["milestones"]), 18)
+        expected = 18 + len(RESOURCE_MILESTONE_LOCATIONS)
+        self.assertEqual(len(slot_data["milestones"]), expected)
 
     def test_wonder_is_earth_repopulator(self):
         slot_data = self.world.fill_slot_data()

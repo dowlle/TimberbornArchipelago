@@ -200,6 +200,35 @@ ALL_MILESTONE_LOCATIONS: list[str] = (
 )
 
 # ---------------------------------------------------------------------------
+# Resource milestone locations — triggered by global resource count thresholds.
+# IDs start at 9_710_000 (clear of the existing 9_700_000-9_700_018 block).
+# Goods and thresholds map to construction-material tiers for logic gating.
+# Order is append-only; never reorder or delete once IDs are assigned.
+# ---------------------------------------------------------------------------
+RESOURCE_MILESTONE_LOC_BASE = 9_710_000
+
+RESOURCE_MILESTONE_LOCATIONS: list[str] = [
+    # T1 — always producible from day 1
+    "Resource: Reach 500 Logs",
+    "Resource: Reach 1000 Logs",
+    # T2 — requires Gear Workshop + Forester
+    "Resource: Reach 500 Planks",
+    "Resource: Reach 1000 Planks",
+    "Resource: Reach 100 Gears",
+    "Resource: Reach 250 Gears",
+    "Resource: Reach 500 Bread",
+    # T3 — requires Smelter + scrap source
+    "Resource: Reach 100 Metal Blocks",
+    "Resource: Reach 250 Metal Blocks",
+    # T4 — requires Wood Workshop (Treated Planks) or Scavenger Flag/Metalsmith (Scrap Metal)
+    "Resource: Reach 100 Treated Planks",
+    "Resource: Reach 250 Treated Planks",
+    "Resource: Reach 100 Scrap Metal",
+    "Resource: Reach 250 Scrap Metal",
+]
+
+
+# ---------------------------------------------------------------------------
 # ID maps
 # ---------------------------------------------------------------------------
 science_location_name_to_id: dict[str, int] = {
@@ -210,9 +239,15 @@ milestone_location_name_to_id: dict[str, int] = {
     name: MILESTONE_LOC_BASE + i for i, name in enumerate(ALL_MILESTONE_LOCATIONS)
 }
 
+resource_milestone_location_name_to_id: dict[str, int] = {
+    name: RESOURCE_MILESTONE_LOC_BASE + i
+    for i, name in enumerate(RESOURCE_MILESTONE_LOCATIONS)
+}
+
 location_name_to_id: dict[str, int] = {
     **science_location_name_to_id,
     **milestone_location_name_to_id,
+    **resource_milestone_location_name_to_id,
 }
 
 location_table: dict[str, dict] = {name: {} for name in location_name_to_id}

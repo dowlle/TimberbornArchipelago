@@ -234,6 +234,14 @@ class IncludeWonderMilestone(Toggle):
     default = 1
 
 
+class IncludeResourceMilestones(Toggle):
+    """Include resource-threshold milestone locations (e.g. Reach 500 Logs, Reach 250 Metal Blocks).
+    Each location fires once when your global resource count first passes the threshold.
+    Provides mid-game progression anchors tied to your production chain development."""
+    display_name = "Include Resource Milestones"
+    default = 1
+
+
 class ForceEarlyItems(Toggle):
     """
     When enabled, essential early-game blueprints (Forester, Stairs, Levee, Gear Workshop)
@@ -303,6 +311,7 @@ class TimberbornOptions(PerGameCommonOptions):
     include_wellbeing_milestones: IncludeWellbeingMilestones
     include_survival_milestones: IncludeSurvivalMilestones
     include_wonder_milestone: IncludeWonderMilestone
+    include_resource_milestones: IncludeResourceMilestones
     force_early_items: ForceEarlyItems
     extra_early_survival: ExtraEarlySurvival
     logic_difficulty: LogicDifficulty

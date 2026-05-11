@@ -266,6 +266,20 @@ MILESTONE_TIERS: dict[str, int] = {
     # Wonder (both factions)
     "Wonder: Complete Earth Recultivator": 5,
     "Wonder: Complete Earth Repopulator":  5,
+    # Resource thresholds
+    "Resource: Reach 500 Logs":            1,
+    "Resource: Reach 1000 Logs":           1,
+    "Resource: Reach 500 Planks":          2,
+    "Resource: Reach 1000 Planks":         2,
+    "Resource: Reach 100 Gears":           2,
+    "Resource: Reach 250 Gears":           2,
+    "Resource: Reach 500 Bread":           2,
+    "Resource: Reach 100 Metal Blocks":    3,
+    "Resource: Reach 250 Metal Blocks":    3,
+    "Resource: Reach 100 Treated Planks":  4,
+    "Resource: Reach 250 Treated Planks":  4,
+    "Resource: Reach 100 Scrap Metal":     3,
+    "Resource: Reach 250 Scrap Metal":     3,
 }
 
 
