@@ -154,6 +154,20 @@ class TestBranchingGeneration(TimberbornTestBase):
             self.assertIn("price", entry)
             self.assertIn("tier", entry)
 
+    def test_slot_data_has_shop_placements(self):
+        """slot_data should include shop_placements mapping location_id -> item name."""
+        slot_data = self.world.fill_slot_data()
+        self.assertIn("shop_placements", slot_data)
+        placements = slot_data["shop_placements"]
+        # One entry per shop location
+        self.assertEqual(len(placements), len(self.world.shop_layout))
+        # Keys are string location IDs, values are non-empty item names
+        for loc_id_str, item_name in placements.items():
+            self.assertIsInstance(loc_id_str, str)
+            self.assertTrue(loc_id_str.isdigit(), f"Key not a numeric string: {loc_id_str}")
+            self.assertIsInstance(item_name, str)
+            self.assertTrue(len(item_name) > 0, f"Empty item name for loc {loc_id_str}")
+
     def test_location_names_are_shop_format(self):
         """Location names should be in 'Shop: X-NN' format."""
         for entry in self.world.shop_layout:

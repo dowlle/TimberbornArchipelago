@@ -390,5 +390,19 @@ class TimberbornWorld(World):
                 }
                 for loc_name in self.active_milestones
             ],
+            # Maps each shop location_id (as string key) to the actual AP item name
+            # placed there by the multiworld fill algorithm. The client uses this to
+            # show the real item when a Scout reveals a path, instead of the layout's
+            # original building_name which may differ after fill.
+            # Only covers this world's own locations (planner-known). Items from other
+            # players' games appear under their AP item name.
+            "shop_placements": {
+                str(location_name_to_id[e["location_name"]]): (
+                    self.multiworld.get_location(e["location_name"], self.player).item.name
+                    if self.multiworld.get_location(e["location_name"], self.player).item is not None
+                    else e["building_name"]
+                )
+                for e in self.shop_layout
+            },
         }
         return data
