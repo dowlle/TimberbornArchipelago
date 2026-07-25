@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a Timberborn Archipelago bug or idea
+    url: https://github.com/dowlle/timberborn-modding/issues/new/choose
+    about: All Timberborn randomizer issues live in the mod repository, including APWorld ones. That tracker has the bug, stuck seed and feature forms.
+  - name: Installing and playing Timberborn Archipelago
+    url: https://github.com/dowlle/timberborn-modding#installing
+    about: What the three release files are, where each one goes, and who needs which.
+  - name: An Archipelago core problem, not Timberborn
+    url: https://github.com/ArchipelagoMW/Archipelago/issues
+    about: This repository is a fork carrying the Timberborn world. Bugs in Archipelago itself belong upstream.
