@@ -44,7 +44,7 @@ class TestDefaultGeneration(TimberbornTestBase):
                 self.assertIn(bp_name, pool_names, f"Missing blueprint item: {bp_name}")
 
     def test_correct_blueprint_count(self):
-        self.assertEqual(len(ALL_FT_BLUEPRINTS), 126, "Expected 126 Folktails blueprints")
+        self.assertEqual(len(ALL_FT_BLUEPRINTS), 132, "Expected 132 Folktails blueprints")
 
     def test_all_shop_locations_created(self):
         """Every shop layout entry should map to a created location."""
@@ -64,7 +64,7 @@ class TestDefaultGeneration(TimberbornTestBase):
         self.assertNotIn("Wonder: Complete Earth Repopulator", loc_names)
 
     def test_total_location_count(self):
-        self.assertEqual(len(ALL_BUILDING_NAMES), 126)
+        self.assertEqual(len(ALL_BUILDING_NAMES), 132)
         self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 19)  # 18 FT + 1 IT wonder
         from ..Locations import RESOURCE_MILESTONE_LOCATIONS
         # Total: pre-allocated shop slots + milestone locations + resource milestone locations
@@ -104,12 +104,12 @@ class TestBranchingGeneration(TimberbornTestBase):
 
     def test_shop_layout_exists(self):
         self.assertIsNotNone(self.world.shop_layout)
-        self.assertEqual(len(self.world.shop_layout), 126)
+        self.assertEqual(len(self.world.shop_layout), 132)
 
     def test_shop_layout_in_slot_data(self):
         slot_data = self.world.fill_slot_data()
         self.assertIn("shop_layout", slot_data)
-        self.assertEqual(len(slot_data["shop_layout"]), 126)
+        self.assertEqual(len(slot_data["shop_layout"]), 132)
 
     def test_shop_layout_has_4_paths(self):
         paths = {e["path"] for e in self.world.shop_layout}
@@ -120,8 +120,8 @@ class TestBranchingGeneration(TimberbornTestBase):
         for e in self.world.shop_layout:
             path_counts[e["path"]] = path_counts.get(e["path"], 0) + 1
         for path, count in path_counts.items():
-            self.assertIn(count, [31, 32],
-                          f"Path {path} has {count} locations (expected 31-32)")
+            self.assertEqual(count, 33,
+                             f"Path {path} has {count} locations (expected 33)")
 
     def test_prices_monotonically_increasing(self):
         sorted_by_pos = sorted(self.world.shop_layout, key=lambda e: e["global_pos"])

@@ -125,6 +125,13 @@ def _tier_predicate(tier: int, state: CollectionState, player: int,
 # Rule setters
 # ---------------------------------------------------------------------------
 
+
+def has_building_prerequisites(building: str, state: CollectionState, player: int,
+                               faction: str = "Folktails") -> bool:
+    """Requirements beyond the shop's conservative material-tier policy."""
+    return (building != "Dance Pit" or faction != "IronTeeth"
+            or has(state, player, "Metalsmith"))
+
 def set_rules(world: "TimberbornWorld") -> None:
     player = world.player
     mw = world.multiworld
@@ -227,8 +234,9 @@ def _set_building_prerequisite_rules(world, player, mw, faction: str) -> None:
         original_rule = loc.access_rule
 
         # Combined rule: original (sequential + slot tier) AND building prereqs
-        loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, orig=original_rule: (
+        loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, b=building, orig=original_rule: (
             orig(state) and _tier_predicate(bt, state, p, f)
+            and has_building_prerequisites(b, state, p, f)
         )
 
         # Also update the event location if it exists
@@ -236,8 +244,9 @@ def _set_building_prerequisite_rules(world, player, mw, faction: str) -> None:
         if event_name in event_names:
             event_loc = mw.get_location(event_name, player)
             event_orig = event_loc.access_rule
-            event_loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, eo=event_orig: (
+            event_loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, b=building, eo=event_orig: (
                 eo(state) and _tier_predicate(bt, state, p, f)
+                and has_building_prerequisites(b, state, p, f)
             )
 
 

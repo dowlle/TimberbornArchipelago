@@ -1,4 +1,5 @@
 from BaseClasses import Item, ItemClassification
+from .ItemIds import ITEM_IDS
 
 # ---------------------------------------------------------------------------
 # Base IDs — ranges reserved per category
@@ -74,6 +75,7 @@ STORAGE_BLUEPRINTS = [
 
 # --- WATER ---
 WATER_BLUEPRINTS = [
+    ("Compact Mechanical Pump",     ItemClassification.useful),      # 4000 S
     ("Badwater Pump",               ItemClassification.useful),      # 250  F
     ("Fill Valve",                  ItemClassification.useful),      # 300  S
     ("Fluid Dump",                  ItemClassification.useful),      # 250  S
@@ -87,6 +89,7 @@ WATER_BLUEPRINTS = [
 
 # --- LANDSCAPING ---
 LANDSCAPING_BLUEPRINTS = [
+    ("Airlock",                     ItemClassification.useful),      # 300  S
     ("Levee",                       ItemClassification.progression),  # 120  S
     ("Floodgate",                   ItemClassification.progression), # 150  S
     ("Impermeable Floor",           ItemClassification.useful),      # 200  S
@@ -112,6 +115,7 @@ METAL_BLUEPRINTS = [
 
 # --- POWER ---
 POWER_BLUEPRINTS = [
+    ("Impermeable Power Shaft",      ItemClassification.useful),      # 300  S
     ("Vertical Power Shaft",        ItemClassification.useful),      # 40   S
     ("Wind Turbine",                ItemClassification.progression), # 120  F
     ("Geothermal Engine",           ItemClassification.progression), # 160  S
@@ -136,6 +140,8 @@ DISTRICT_BLUEPRINTS = [
 
 # --- WELLBEING ---
 WELLBEING_BLUEPRINTS = [
+    ("Sauna",                       ItemClassification.useful),      # 300  F
+    ("Domed Garden",                ItemClassification.useful),      # 800  F
     ("Shower",                      ItemClassification.progression),  # 50   F
     ("Medical Bed",                 ItemClassification.progression),  # 80   S
     ("Contemplation Spot",          ItemClassification.useful),      # 100  F
@@ -220,6 +226,7 @@ DECORATION_BLUEPRINTS = [
 
 # --- FOLKTAILS MONUMENTS (pre-Wonder) ---
 FT_MONUMENT_BLUEPRINTS = [
+    ("Hall of Abundance",            ItemClassification.useful),      # 15000 F
     ("Farmer Monument",             ItemClassification.useful),      # 1000  F
     ("Brazier of Bonding",          ItemClassification.useful),      # 3000  F
     ("Fountain of Joy",             ItemClassification.useful),      # 12000 F
@@ -227,8 +234,8 @@ FT_MONUMENT_BLUEPRINTS = [
 ]
 
 # ---------------------------------------------------------------------------
-# All Folktails blueprint items in a stable order (order must NEVER change
-# once assigned IDs, to avoid shifting existing IDs).
+# Folktails blueprint categories. Permanent IDs live in ItemIds.py and do not
+# depend on category order.
 # ---------------------------------------------------------------------------
 ALL_FT_BLUEPRINTS: list[tuple[str, ItemClassification]] = (
     WOOD_BLUEPRINTS
@@ -297,7 +304,7 @@ IT_LANDSCAPING_BLUEPRINTS = [
 
 # --- IT METAL ---
 IT_METAL_BLUEPRINTS = [
-    ("Metalsmith",                  ItemClassification.useful),      # 150
+    ("Metalsmith",                  ItemClassification.progression), # 150; Dance Pit needs Metal Parts
     ("Efficient Mine",              ItemClassification.useful),      # 4000
 ]
 
@@ -318,6 +325,8 @@ IT_SCIENCE_BLUEPRINTS = [
 
 # --- IT WELLBEING ---
 IT_WELLBEING_BLUEPRINTS = [
+    ("Massager",                    ItemClassification.useful),      # 150
+    ("Dance Pit",                   ItemClassification.useful),      # 1800
     ("Double Shower",               ItemClassification.useful),      # 50
     ("Scratcher",                   ItemClassification.useful),      # 100
     ("Swimming Pool",               ItemClassification.useful),      # 250
@@ -330,6 +339,7 @@ IT_WELLBEING_BLUEPRINTS = [
 
 # --- IT PATHS ---
 IT_PATH_BLUEPRINTS = [
+    ("Impermeable Tubeway",          ItemClassification.useful),      # 800
     ("Tubeway",                     ItemClassification.useful),      # 500
     ("Vertical Tubeway",            ItemClassification.useful),      # 600
     ("Tubeway Station",             ItemClassification.useful),      # 700
@@ -346,6 +356,7 @@ IT_DECORATION_BLUEPRINTS = [
 
 # --- IT MONUMENTS (pre-Wonder) ---
 IT_MONUMENT_BLUEPRINTS = [
+    ("Arch of Progress",            ItemClassification.useful),      # 15000
     ("Laborer Monument",            ItemClassification.useful),      # 1000
     ("Flame of Unity",              ItemClassification.useful),      # 3000
     ("Tribute to Ingenuity",        ItemClassification.useful),      # 12000
@@ -353,8 +364,7 @@ IT_MONUMENT_BLUEPRINTS = [
 ]
 
 # ---------------------------------------------------------------------------
-# All IronTeeth-exclusive blueprint items in a stable order.
-# IDs assigned from IT_BLUEPRINT_BASE — order must NEVER change.
+# IronTeeth-exclusive blueprint categories. IDs are explicit in ItemIds.py.
 # ---------------------------------------------------------------------------
 ALL_IT_ONLY_BLUEPRINTS: list[tuple[str, ItemClassification]] = (
     IT_WOOD_BLUEPRINTS
@@ -378,6 +388,7 @@ ALL_IT_ONLY_BLUEPRINTS: list[tuple[str, ItemClassification]] = (
 # ScavengerFlag is a shared building but free (SC=0) for IT, so it's FT-only in AP.
 # ---------------------------------------------------------------------------
 _FT_ONLY_NAMES: set[str] = {
+    "Hall of Abundance", "Sauna", "Domed Garden",
     # Wood
     "Paper Mill", "Printing Press",
     # Food
@@ -465,62 +476,61 @@ TRAP_ITEMS: list[tuple[str, ItemClassification, int]] = [
 item_table: dict[str, dict] = {}
 
 # Folktails blueprints (shared + FT-only) — IDs frozen from FT_BLUEPRINT_BASE
-for i, (name, classification) in enumerate(ALL_FT_BLUEPRINTS):
+for name, classification in ALL_FT_BLUEPRINTS:
     item_table[f"Blueprint: {name}"] = {
         "classification": classification,
         "count": 1,
-        "id": FT_BLUEPRINT_BASE + i,
+        "id": ITEM_IDS[f"Blueprint: {name}"],
     }
 
 # IronTeeth-exclusive blueprints — IDs from IT_BLUEPRINT_BASE
-for i, (name, classification) in enumerate(ALL_IT_ONLY_BLUEPRINTS):
+for name, classification in ALL_IT_ONLY_BLUEPRINTS:
     item_table[f"Blueprint: {name}"] = {
         "classification": classification,
         "count": 1,
-        "id": IT_BLUEPRINT_BASE + i,
+        "id": ITEM_IDS[f"Blueprint: {name}"],
     }
 
 # Boosts
-for i, (name, classification) in enumerate(BOOSTS):
+for name, classification in BOOSTS:
     item_table[name] = {
         "classification": classification,
         "count": 1,
-        "id": BOOST_BASE + i,
+        "id": ITEM_IDS[name],
     }
 
 # Scouts
-for i, (name, classification) in enumerate(SCOUT_ITEMS):
+for name, classification in SCOUT_ITEMS:
     item_table[name] = {
         "classification": classification,
         "count": 1,
-        "id": SCOUT_BASE + i,
+        "id": ITEM_IDS[name],
     }
 
 # Filler
-for i, (name, classification, count) in enumerate(FILLER_ITEMS):
+for name, classification, count in FILLER_ITEMS:
     item_table[name] = {
         "classification": classification,
         "count": count,
-        "id": FILLER_BASE + i,
+        "id": ITEM_IDS[name],
     }
 
 # Traps
-for i, (name, classification, count) in enumerate(TRAP_ITEMS):
+for name, classification, count in TRAP_ITEMS:
     item_table[name] = {
         "classification": classification,
         "count": count,
-        "id": TRAP_BASE + i,
+        "id": ITEM_IDS[name],
     }
 
 # Skip — count determined at runtime by SkipCount option
 item_table["Skip"] = {
     "classification": ItemClassification.useful,
     "count": 0,
-    "id": SKIP_BASE,
+    "id": ITEM_IDS["Skip"],
 }
 
-# Progressive items — IDs frozen from PROGRESSIVE_BASE.
-# Order must NEVER change once assigned.
+# Progressive items use explicit IDs from ItemIds.py, independent of chain order.
 from .ProgressiveItems import SHARED_PROGRESSIVE_CHAINS, FT_PROGRESSIVE_CHAINS, IT_PROGRESSIVE_CHAINS
 
 _ALL_PROGRESSIVE_CHAINS: list[tuple[str, tuple[str, ...]]] = (
@@ -529,11 +539,11 @@ _ALL_PROGRESSIVE_CHAINS: list[tuple[str, tuple[str, ...]]] = (
     + list(IT_PROGRESSIVE_CHAINS.items())
 )
 
-for i, (prog_name, chain) in enumerate(_ALL_PROGRESSIVE_CHAINS):
+for prog_name, chain in _ALL_PROGRESSIVE_CHAINS:
     item_table[prog_name] = {
         "classification": ItemClassification.progression,
         "count": len(chain),
-        "id": PROGRESSIVE_BASE + i,
+        "id": ITEM_IDS[prog_name],
     }
 
 item_name_to_id: dict[str, int] = {name: data["id"] for name, data in item_table.items()}

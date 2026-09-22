@@ -5,7 +5,7 @@ Outputs two faction-specific flowcharts (Folktails and Iron Teeth) showing
 which materials each building requires, grouped by material tier.
 
 Usage:
-    python extract_flowchart.py [--output PATH]
+    python extract_flowchart.py [--blueprints PATH] [--output-dir PATH]
 
 Default output: docs/Timberborn — Building Unlock Flowchart (by Materials).md
 """
@@ -13,9 +13,11 @@ Default output: docs/Timberborn — Building Unlock Flowchart (by Materials).md
 from __future__ import annotations
 
 import json
+import argparse
 import os
+from pathlib import Path
 import re
-import sys
+import zipfile
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -61,11 +63,11 @@ PRODUCERS = {
     "Wood Workshop": "TreatedPlank",
     "Smelter": "MetalBlock",
     "Scavenger Flag": "ScrapMetal",
-    "Bot Part Factory": "MetalPart",
     "Explosives Factory": "Explosives",
-    "Refinery": "Extract",
+    "Centrifuge": "Extract",
+    "Refinery": "Biofuel",
     "Grease Factory": "Grease",
-    "Metalsmith": "MetalBlock",  # IT version
+    "Metalsmith": "MetalPart",
 }
 
 
@@ -120,26 +122,6 @@ def display_name_to_dirname(name: str) -> str:
     return re.sub(r"[\s']+", "", name)
 
 
-def find_blueprint(dirname: str, faction: str) -> str | None:
-    for category in os.listdir(BLUEPRINTS_DIR):
-        cat_path = os.path.join(BLUEPRINTS_DIR, category)
-        if not os.path.isdir(cat_path):
-            continue
-        building_dir = os.path.join(cat_path, dirname)
-        if os.path.isdir(building_dir):
-            json_name = f"{dirname}.{faction}.blueprint.json"
-            json_path = os.path.join(building_dir, json_name)
-            if os.path.isfile(json_path):
-                return json_path
-    return None
-
-
-def extract_building_cost(json_path: str) -> list[dict]:
-    with open(json_path, "r", encoding="utf-8-sig") as f:
-        data = json.load(f)
-    return data.get("BuildingSpec", {}).get("BuildingCost", [])
-
-
 def get_tier_from_costs(costs: list[dict]) -> int:
     if not costs:
         return 1
@@ -154,16 +136,35 @@ def get_tier_from_costs(costs: list[dict]) -> int:
 # Building data collection
 # ---------------------------------------------------------------------------
 
-def collect_building_data(names: list[str], faction: str) -> list[dict]:
+def load_blueprints(path: str) -> dict[str, dict]:
+    """Resolve canonical names and same-faction aliases from ZIP or imported JSON."""
+    if zipfile.is_zipfile(path):
+        with zipfile.ZipFile(path) as archive:
+            data = [json.loads(archive.read(name)) for name in archive.namelist()
+                    if name.endswith(".blueprint.json")]
+    else:
+        data = [json.loads(p.read_text(encoding="utf-8-sig"))
+                for p in Path(path).rglob("*.blueprint.json")]
+    buildings = [b for b in data if "BuildingSpec" in b and "TemplateSpec" in b]
+    result = {b["TemplateSpec"]["TemplateName"].casefold(): b for b in buildings}
+    for building in buildings:
+        spec = building["TemplateSpec"]
+        faction = spec["TemplateName"].rsplit(".", 1)[-1]
+        for alias in spec.get("BackwardCompatibleTemplateNames", []):
+            if alias.rsplit(".", 1)[-1] == faction:
+                result.setdefault(alias.casefold(), building)
+    return result
+
+
+def collect_building_data(names: list[str], faction: str, blueprints: dict[str, dict]) -> list[dict]:
     """Collect building name, costs, and tier for a list of buildings."""
     buildings = []
     for name in names:
         dirname = display_name_to_dirname(name)
-        json_path = find_blueprint(dirname, faction)
-        if json_path is None:
-            buildings.append({"name": name, "costs": [], "tier": 1})
-            continue
-        costs = extract_building_cost(json_path)
+        key = f"{dirname}.{faction}".casefold()
+        if key not in blueprints:
+            raise ValueError(f"No blueprint or compatibility alias for {name} ({faction})")
+        costs = blueprints[key]["BuildingSpec"]["BuildingCost"]
         tier = get_tier_from_costs(costs)
         buildings.append({"name": name, "costs": costs, "tier": tier})
     return buildings
@@ -192,6 +193,7 @@ def format_cost(costs: list[dict]) -> str:
 
 # Buildings shown individually (progression-relevant or notable)
 PROGRESSION_BUILDINGS = {
+    "Hall of Abundance", "Arch of Progress", "Dance Pit",
     # Resource producers (always shown)
     *PRODUCERS.keys(),
     # Key infrastructure
@@ -332,9 +334,11 @@ def generate_mermaid(buildings: list[dict], faction: str, faction_label: str) ->
         if any(b["name"] == name for b in buildings):
             lines.append(f'    {sanitize_id("Smelter")} -->|"Metal Blocks"| {sanitize_id(name)}')
 
-    # T3 → T5: Bot Part Factory → MetalPart consumers
+    # Bot components and Metal Parts are different goods.
     if any(b["name"] == "Bot Part Factory" for b in buildings):
-        lines.append(f'    {sanitize_id("Bot Part Factory")} -->|"Metal Parts"| {sanitize_id("Bot Assembler")}')
+        lines.append(f'    {sanitize_id("Bot Part Factory")} -->|"Bot components"| {sanitize_id("Bot Assembler")}')
+    if any(b["name"] == "Dance Pit" for b in buildings):
+        lines.append(f'    {sanitize_id("Metalsmith")} -->|"Metal Parts"| {sanitize_id("Dance Pit")}')
 
     # Grease Factory (IT)
     if any(b["name"] == "Grease Factory" for b in buildings):
@@ -345,9 +349,9 @@ def generate_mermaid(buildings: list[dict], faction: str, faction_label: str) ->
         if any(b["name"] == "Dynamite" for b in buildings):
             lines.append(f'    {sanitize_id("Explosives Factory")} -->|"Explosives"| {sanitize_id("Dynamite")}')
 
-    # Refinery → Extract consumers
-    if any(b["name"] == "Refinery" for b in buildings):
-        lines.append(f'    {sanitize_id("Refinery")} -->|"Extract"| t4')
+    # Centrifuge produces Extract on both factions.
+    if any(b["name"] == "Centrifuge" for b in buildings):
+        lines.append(f'    {sanitize_id("Centrifuge")} -->|"Extract"| t4')
 
     # Force vertical flow: invisible links between tier subgraphs
     lines.append("")
@@ -372,7 +376,7 @@ def write_faction_doc(path: str, faction_label: str, buildings: list[dict], char
     doc = f"""# {faction_label} — Building Unlock Flowchart (by Materials)
 
 > Auto-generated from blueprint JSON files. Do not edit manually.
-> Regenerate with: `python scripts/extract_flowchart.py`
+> Regenerate with: `python scripts/extract_flowchart.py --blueprints PATH --output-dir PATH`
 >
 > Arrows show the **resource production chain** — which buildings produce materials
 > needed by other buildings. Buildings are grouped by their **construction material tier**
@@ -390,9 +394,12 @@ def write_faction_doc(path: str, faction_label: str, buildings: list[dict], char
 
 
 def main():
-    if not os.path.isdir(BLUEPRINTS_DIR):
-        print(f"ERROR: Blueprint directory not found: {BLUEPRINTS_DIR}")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--blueprints", default=BLUEPRINTS_DIR, help="Blueprints.zip or imported blueprint directory")
+    parser.add_argument("--output-dir", default=DOCS_DIR, help="Directory for both faction flowcharts")
+    args = parser.parse_args()
+    blueprints = load_blueprints(args.blueprints)
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
     all_ft_names, it_only_names, ft_only_names = parse_building_names_from_items()
     shared_names = [n for n in all_ft_names if n not in ft_only_names]
@@ -400,16 +407,16 @@ def main():
     print(f"Parsed: {len(all_ft_names)} FT, {len(it_only_names)} IT-exclusive, {len(shared_names)} shared")
 
     # Folktails: all FT names
-    ft_buildings = collect_building_data(all_ft_names, "Folktails")
+    ft_buildings = collect_building_data(all_ft_names, "Folktails", blueprints)
     # Iron Teeth: shared + IT-exclusive
     it_names = shared_names + it_only_names
-    it_buildings = collect_building_data(it_names, "IronTeeth")
+    it_buildings = collect_building_data(it_names, "IronTeeth", blueprints)
 
     ft_chart = generate_mermaid(ft_buildings, "Folktails", "Folktails")
     it_chart = generate_mermaid(it_buildings, "IronTeeth", "Iron Teeth")
 
-    ft_path = os.path.join(DOCS_DIR, "Folktails — Building Flowchart.md")
-    it_path = os.path.join(DOCS_DIR, "Iron Teeth — Building Flowchart.md")
+    ft_path = os.path.join(args.output_dir, "Folktails — Building Flowchart.md")
+    it_path = os.path.join(args.output_dir, "Iron Teeth — Building Flowchart.md")
 
     write_faction_doc(ft_path, "Folktails", ft_buildings, ft_chart)
     write_faction_doc(it_path, "Iron Teeth", it_buildings, it_chart)

@@ -38,7 +38,8 @@ ALL_SCIENCE_LOCATIONS: list[str] = [
 # to draw from.  These are NOT location names; they're just the reference pool.
 #
 # Faction-specific pools are built via Items.get_building_names(faction).
-# The lists below are kept for reference and backward compatibility.
+# Category lists below are legacy 1.0 snapshots, retained for compatibility.
+# Use Items.get_building_names for current pools; ALL_BUILDING_NAMES delegates to it.
 # ---------------------------------------------------------------------------
 
 # --- WOOD ---
@@ -142,13 +143,9 @@ IT_MONUMENT_BUILDINGS = [
     "Laborer Monument", "Flame of Unity", "Tribute to Ingenuity",
 ]
 
-ALL_BUILDING_NAMES: list[str] = (
-    WOOD_BUILDINGS + FOOD_BUILDINGS + HOUSING_BUILDINGS + STORAGE_BUILDINGS
-    + WATER_BUILDINGS + LANDSCAPING_BUILDINGS + METAL_BUILDINGS
-    + POWER_BUILDINGS + SCIENCE_PRODUCTION_BUILDINGS + DISTRICT_BUILDINGS
-    + WELLBEING_BUILDINGS + PATH_BUILDINGS + AUTOMATION_BUILDINGS
-    + DECORATION_BUILDINGS + FT_MONUMENT_BUILDINGS
-)
+from .Items import get_building_names
+
+ALL_BUILDING_NAMES: list[str] = get_building_names("Folktails")
 
 # ---------------------------------------------------------------------------
 # Milestone locations — triggered by in-game events, not science spending
