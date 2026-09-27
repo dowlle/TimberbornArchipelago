@@ -12,10 +12,28 @@ Your colony must survive on whatever tech arrives from the multiworld while send
 
 ## What is the goal when randomized?
 
-The goal is configurable:
-- **Complete Wonder** *(default)*: Construct your faction's Wonder building (Earth Recultivator).
-- **Reach Population**: Grow your colony to the target beaver count.
-- **Survive Cycles**: Survive a set number of drought cycles.
+Pick one or more goals in Goal Selection, and whether any or all of them must be completed:
+- **Wonder** *(default)*: complete your faction's Wonder (Earth Recultivator or Earth Repopulator) in this game. A wonder finished in an earlier game on the same map does not count.
+- **Population**: grow your colony to the target count.
+- **Droughts**: survive a number of droughts (5 to 40, default 15).
+- **Badtides**: survive a number of badtides (1 to 20, default 5).
+- **Well-being**: reach an average well-being level.
+- **Bots**: build a number of bots.
+- **Water Storage**: hold an amount of water in stock.
+
+A drought or badtide counts when it ends, and only hazards after you connect count, for the goals and for the survival milestones.
+
+### Survival in logic
+
+The first badtide comes on a fixed cycle whatever items you have, so Force Early Items puts the Floodgate (or the first Progressive Flood Control) and the Medium Tank in the first sphere (with Starting Blueprints on, the default). Logic expects these buildings before it expects you to live through a hazard:
+
+| | Droughts | Badtides |
+|---|---|---|
+| Early (droughts 1 to 5, badtides 1 to 3) | Levee, Floodgate, Stairs | Floodgate, Levee, Medium Tank |
+| Mid (droughts 6 to 15, badtides 4 to 10) | early plus Medium Tank, Double Floodgate, Platform | early plus Double Floodgate, Contamination Sensor and the cure: Herbalist and Paper Mill (Folktails) or Decontamination Pod (Iron Teeth) |
+| Late (more) | mid plus Large Tank or Triple Floodgate, and Gravity Battery, Geothermal Engine or Wind Turbine (Iron Teeth: Steam Engine) | mid plus Large Tank and a Mechanical Fluid Pump or Compact Mechanical Pump (Iron Teeth: Large Water Wheel and a Deep Mechanical Fluid Pump or Compact Mechanical Pump) |
+
+The survival milestones use it as 1st = early, 5 = mid, 10 = late. The Droughts and Badtides goals pick the row from their target, as shown. Long goals (Wonder, Population 100 or more, Well-being 20 or more, Water Storage 5000 or more) need mid drought and early badtide survival.
 
 ## Which items can be in another player's world?
 
@@ -37,8 +55,8 @@ In addition to shop locations, milestone locations trigger automatically as you 
 
 - **Population milestones** — first beaver born, first grown up, reaching 10/25/50/100/200 beavers
 - **Well-being milestones** — reaching well-being levels 5/10/15/20
-- **Survival milestones** — surviving 1st/5th/10th drought, 1st/5th/10th badtide
-- **Wonder milestone** — completing the Earth Recultivator
+- **Survival milestones** — surviving 1st/5th/10th drought, 1st/5th/10th badtide, counted when each hazard ends
+- **Wonder milestone** — completing your faction's Wonder in this game
 - **Resource milestones** — reaching a stock of a good, such as 25 Gears or 500 Logs. Resource Milestone Set picks classic (13), lite (31) or full (61, default). Each is in logic once you have the buildings that produce the good.
 
 Each milestone type can be toggled on/off in the YAML settings.

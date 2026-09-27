@@ -78,8 +78,9 @@ def can_produce_extract(state: CollectionState, player: int, faction: str = "Fol
     """Centrifuge converts Badwater → Extract (Refinery makes Biofuel and Catalyst)."""
     return resource_chain_met("Extract", 1, state, player, faction)
 
+# Folktails Bot Chassis costs Biofuel, which only the Refinery makes.
 BOT_BLUEPRINTS: dict[str, tuple[str, ...]] = {
-    "Folktails": ("Bot Part Factory", "Bot Assembler"),
+    "Folktails": ("Bot Part Factory", "Bot Assembler", "Refinery"),
     "IronTeeth": ("Bot Part Factory", "Bot Assembler"),
 }
 
@@ -594,17 +595,14 @@ def _set_milestone_rules(world, player, mw, faction: str) -> None:
             continue
 
         tier = MILESTONE_TIERS.get(loc_name, 1)
+        required = STRICT_MILESTONE_REQUIREMENTS.get(loc_name, []) if strict else []
+        survival = SURVIVAL_MILESTONE_LEVELS.get(loc_name)
 
-        if strict and loc_name in STRICT_MILESTONE_REQUIREMENTS:
-            required = STRICT_MILESTONE_REQUIREMENTS[loc_name]
-            loc.access_rule = lambda state, p=player, t=tier, f=faction, req=required: (
-                _tier_predicate(t, state, p, f)
-                and all(has(state, p, bld) for bld in req)
-            )
-        else:
-            loc.access_rule = lambda state, p=player, t=tier, f=faction: (
-                _tier_predicate(t, state, p, f)
-            )
+        loc.access_rule = lambda state, p=player, t=tier, f=faction, req=tuple(required), sv=survival: (
+            _tier_predicate(t, state, p, f)
+            and all(has(state, p, bld) for bld in req)
+            and (sv is None or can_survive(sv[0], sv[1], state, p, f))
+        )
 
 
 # Goods each faction's Wonder needs delivered (WonderInventorySpec in the 1.1
@@ -629,20 +627,152 @@ def wonder_blueprints(faction: str) -> tuple[str, ...]:
 
 
 def can_build_wonder(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
-    return _tier5(state, player, faction) and has_all(state, player, *wonder_blueprints(faction))
+    """Construction needs Gears, Treated Planks and Metal Blocks (tier 4), then the
+    wonder's goods chains. No bots. A long goal, so it also needs survival."""
+    return (_tier4(state, player, faction) and has_all(state, player, *wonder_blueprints(faction))
+            and can_survive_long_game(state, player, faction))
 
 
-# Strict-mode building requirements for survival milestones.
-# These buildings are practically necessary to survive the event in-game.
+# Strict-mode building requirements for survival milestones. The survival
+# predicates below already include them and apply in both modes.
 STRICT_MILESTONE_REQUIREMENTS: dict[str, list[str]] = {
     # Droughts — need water storage infrastructure
     "Survival: Survive 5 Droughts":     ["Levee"],
     "Survival: Survive 10 Droughts":    ["Levee", "Medium Tank"],
     # Badtides — need flood control to contain contaminated water
     "Survival: Survive 1st Badtide":    ["Levee", "Floodgate"],
-    "Survival: Survive 5 Badtides":     ["Levee", "Floodgate", "Stairs"],
-    "Survival: Survive 10 Badtides":    ["Levee", "Floodgate", "Stairs"],
+    "Survival: Survive 5 Badtides":     ["Levee", "Floodgate", "Medium Tank"],
+    "Survival: Survive 10 Badtides":    ["Levee", "Floodgate", "Medium Tank"],
 }
+
+
+# ---------------------------------------------------------------------------
+# Survival predicates (Goals and badtide survival review, 2026-09-27)
+#
+# A hazard is survived with water control and stored water early, then
+# automation, cures and bigger storage, then a clean side channel with
+# mechanical pumps and backup power. Each tier is a list of requirement
+# groups; a group is met when any one of its buildings can be built: the
+# blueprint, its material tier and its prerequisites (the Iron Teeth cure,
+# the Decontamination Pod, consumes Extract). Tiers are cumulative. They apply
+# in standard and strict logic.
+# ---------------------------------------------------------------------------
+SURVIVAL_EARLY, SURVIVAL_MID, SURVIVAL_LATE = 1, 2, 3
+
+_DROUGHT_TIERS: dict[str, dict[int, tuple[tuple[str, ...], ...]]] = {
+    "Folktails": {
+        SURVIVAL_EARLY: (("Levee",), ("Floodgate",), ("Stairs",)),
+        SURVIVAL_MID:   (("Medium Tank",), ("Double Floodgate",), ("Platform",)),
+        SURVIVAL_LATE:  (("Large Tank", "Triple Floodgate"),
+                         ("Gravity Battery", "Geothermal Engine", "Wind Turbine")),
+    },
+    "IronTeeth": {
+        SURVIVAL_EARLY: (("Levee",), ("Floodgate",), ("Stairs",)),
+        SURVIVAL_MID:   (("Medium Tank",), ("Double Floodgate",), ("Platform",)),
+        SURVIVAL_LATE:  (("Large Tank", "Triple Floodgate"),
+                         ("Gravity Battery", "Geothermal Engine", "Steam Engine")),
+    },
+}
+
+_BADTIDE_TIERS: dict[str, dict[int, tuple[tuple[str, ...], ...]]] = {
+    "Folktails": {
+        SURVIVAL_EARLY: (("Floodgate",), ("Levee",), ("Medium Tank",)),
+        SURVIVAL_MID:   (("Double Floodgate",), ("Contamination Sensor",),
+                         ("Herbalist",), ("Paper Mill",)),
+        SURVIVAL_LATE:  (("Large Tank",), ("Mechanical Fluid Pump", "Compact Mechanical Pump")),
+    },
+    "IronTeeth": {
+        SURVIVAL_EARLY: (("Floodgate",), ("Levee",), ("Medium Tank",)),
+        SURVIVAL_MID:   (("Double Floodgate",), ("Contamination Sensor",),
+                         ("Decontamination Pod",)),
+        SURVIVAL_LATE:  (("Large Tank",), ("Large Water Wheel",),
+                         ("Deep Mechanical Fluid Pump", "Compact Mechanical Pump")),
+    },
+}
+
+
+def survival_groups(kind: str, level: int, faction: str) -> tuple[tuple[str, ...], ...]:
+    """Requirement groups for surviving droughts or badtides at a level (cumulative)."""
+    table = (_DROUGHT_TIERS if kind == "drought" else _BADTIDE_TIERS)[faction]
+    groups: list[tuple[str, ...]] = []
+    for lvl in range(SURVIVAL_EARLY, level + 1):
+        groups += table[lvl]
+    return tuple(groups)
+
+
+def survival_blueprints(faction: str) -> set[str]:
+    """Every blueprint any survival predicate names (all must be progression)."""
+    names: set[str] = set()
+    for table in (_DROUGHT_TIERS, _BADTIDE_TIERS):
+        for groups in table[faction].values():
+            for group in groups:
+                for building in group:
+                    names.add(building)
+                    names.update(building_prerequisite_blueprints(building, faction))
+    return names
+
+
+def drought_level(count: int) -> int:
+    """Survival level needed for *count* droughts: early 1-5, mid 6-15, late 16+."""
+    return SURVIVAL_EARLY if count <= 5 else SURVIVAL_MID if count <= 15 else SURVIVAL_LATE
+
+
+def badtide_level(count: int) -> int:
+    """Survival level needed for *count* badtides: early 1-3, mid 4-10, late 11+."""
+    return SURVIVAL_EARLY if count <= 3 else SURVIVAL_MID if count <= 10 else SURVIVAL_LATE
+
+
+def can_build(building: str, state: CollectionState, player: int, faction: str = "Folktails") -> bool:
+    return (has(state, player, building)
+            and _tier_predicate(get_building_tier(building, faction), state, player, faction)
+            and has_building_prerequisites(building, state, player, faction))
+
+
+def can_survive(kind: str, level: int, state: CollectionState, player: int,
+                faction: str = "Folktails") -> bool:
+    return all(any(can_build(b, state, player, faction) for b in group)
+               for group in survival_groups(kind, level, faction))
+
+
+def can_survive_long_game(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
+    """Long goals take many cycles: mid drought and early badtide survival."""
+    return (can_survive("drought", SURVIVAL_MID, state, player, faction)
+            and can_survive("badtide", SURVIVAL_EARLY, state, player, faction))
+
+
+# Survival milestones: kind and level. Per the review, the three milestones of
+# each family map to the three levels (1st early, 5 mid, 10 late); the goals
+# pick the level from their threshold with drought_level / badtide_level.
+SURVIVAL_MILESTONE_LEVELS: dict[str, tuple[str, int]] = {
+    "Survival: Survive 1st Drought":  ("drought", SURVIVAL_EARLY),
+    "Survival: Survive 5 Droughts":   ("drought", SURVIVAL_MID),
+    "Survival: Survive 10 Droughts":  ("drought", SURVIVAL_LATE),
+    "Survival: Survive 1st Badtide":  ("badtide", SURVIVAL_EARLY),
+    "Survival: Survive 5 Badtides":   ("badtide", SURVIVAL_MID),
+    "Survival: Survive 10 Badtides":  ("badtide", SURVIVAL_LATE),
+}
+
+# Long-goal thresholds from which a goal needs can_survive_long_game.
+LONG_POPULATION_GOAL = 100
+LONG_WELLBEING_GOAL = 20
+LONG_WATER_STORAGE_GOAL = 5000
+
+
+def goal_survival(goal_name: str, world) -> tuple[tuple[str, int], ...]:
+    """Survival (kind, level) pairs a client-tracked goal needs besides its tier."""
+    options = world.options
+    if goal_name == "Droughts":
+        return (("drought", drought_level(options.drought_cycles_goal.value)),)
+    if goal_name == "Badtides":
+        return (("badtide", badtide_level(options.badtide_cycles_goal.value)),)
+    long_goal = (
+        (goal_name == "Population" and options.population_goal.value >= LONG_POPULATION_GOAL)
+        or (goal_name == "Well-being" and options.wellbeing_goal.value >= LONG_WELLBEING_GOAL)
+        or (goal_name == "Water Storage" and options.water_storage_goal.value >= LONG_WATER_STORAGE_GOAL)
+    )
+    if long_goal:
+        return (("drought", SURVIVAL_MID), ("badtide", SURVIVAL_EARLY))
+    return ()
 
 
 def _resolve_goals(world) -> set[str]:
@@ -736,9 +866,11 @@ def _set_completion_condition(world, player, mw, faction: str) -> None:
         # Gate the Victory event location so the solver knows what tech is
         # required before the goal can be achieved in-game.
         tier = _goal_tier(goal_name, world)
+        survival = goal_survival(goal_name, world)
         event_loc = mw.get_location(event, player)
-        event_loc.access_rule = lambda state, p=player, t=tier, f=faction: (
+        event_loc.access_rule = lambda state, p=player, t=tier, f=faction, sv=survival: (
             _tier_predicate(t, state, p, f)
+            and all(can_survive(kind, level, state, p, f) for kind, level in sv)
         )
 
     if not goal_checks:

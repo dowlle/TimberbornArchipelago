@@ -69,13 +69,13 @@ HOUSING_BLUEPRINTS = [
 STORAGE_BLUEPRINTS = [
     ("Medium Tank",                 ItemClassification.progression),  # 120  S
     ("Large Warehouse",             ItemClassification.useful),      # 250  S
-    ("Large Tank",                  ItemClassification.useful),      # 600  S
+    ("Large Tank",                  ItemClassification.progression), # 600  S
     ("Underground Pile",            ItemClassification.useful),      # 1000 F
 ]
 
 # --- WATER ---
 WATER_BLUEPRINTS = [
-    ("Compact Mechanical Pump",     ItemClassification.useful),      # 4000 S
+    ("Compact Mechanical Pump",     ItemClassification.progression), # 4000 S
     ("Badwater Pump",               ItemClassification.progression), # 250  F
     ("Fill Valve",                  ItemClassification.useful),      # 300  S
     ("Fluid Dump",                  ItemClassification.useful),      # 250  S
@@ -83,7 +83,7 @@ WATER_BLUEPRINTS = [
     ("Aquifer Drill",               ItemClassification.useful),      # 400  S
     ("Centrifuge",                  ItemClassification.progression), # 600  S
     ("Badwater Dome",               ItemClassification.useful),      # 2000 F
-    ("Mechanical Fluid Pump",       ItemClassification.useful),      # 2500 F
+    ("Mechanical Fluid Pump",       ItemClassification.progression), # 2500 F
     ("Badwater Rig",                ItemClassification.useful),      # 4000 F
 ]
 
@@ -93,11 +93,11 @@ LANDSCAPING_BLUEPRINTS = [
     ("Levee",                       ItemClassification.progression),  # 120  S
     ("Floodgate",                   ItemClassification.progression), # 150  S
     ("Impermeable Floor",           ItemClassification.useful),      # 200  S
-    ("Double Floodgate",            ItemClassification.useful),      # 250  S
+    ("Double Floodgate",            ItemClassification.progression), # 250  S
     ("Contamination Barrier",       ItemClassification.useful),      # 400  F
     ("Explosives Factory",          ItemClassification.progression), # 400  S
     ("Valve",                       ItemClassification.useful),      # 500  S
-    ("Triple Floodgate",            ItemClassification.useful),      # 500  S
+    ("Triple Floodgate",            ItemClassification.progression), # 500  S
     ("Dynamite",                    ItemClassification.useful),      # 600  S
     ("Double Dynamite",             ItemClassification.useful),      # 900  S
     ("Terrain Block",               ItemClassification.useful),      # 1000 S
@@ -191,7 +191,7 @@ AUTOMATION_BLUEPRINTS = [
     ("Resource Counter",            ItemClassification.useful),      # 250  S
     ("Science Counter",             ItemClassification.useful),      # 300  S
     ("Weather Station",             ItemClassification.useful),      # 300  S
-    ("Contamination Sensor",        ItemClassification.useful),      # 400  S
+    ("Contamination Sensor",        ItemClassification.progression), # 400  S
     ("Indicator",                   ItemClassification.useful),      # 400  S
     ("Speaker",                     ItemClassification.useful),      # 500  S
     ("Power Meter",                 ItemClassification.useful),      # 600  S
@@ -293,7 +293,7 @@ IT_STORAGE_BLUEPRINTS: list[tuple[str, ItemClassification]] = [
 IT_WATER_BLUEPRINTS = [
     # DeepWaterPump (SC=0) is free
     ("Deep Badwater Pump",          ItemClassification.progression), # 250
-    ("Deep Mechanical Fluid Pump",  ItemClassification.useful),      # 2500
+    ("Deep Mechanical Fluid Pump",  ItemClassification.progression), # 2500
     ("Badwater Discharge",          ItemClassification.useful),      # 4000
 ]
 
@@ -311,7 +311,7 @@ IT_METAL_BLUEPRINTS = [
 # --- IT POWER ---
 IT_POWER_BLUEPRINTS = [
     # CompactWaterWheel (SC=0) and LargePowerWheel (SC=0) are free
-    ("Large Water Wheel",           ItemClassification.useful),      # 200
+    ("Large Water Wheel",           ItemClassification.progression), # 200
     ("Steam Engine",                ItemClassification.progression), # 400
 ]
 
@@ -330,7 +330,7 @@ IT_WELLBEING_BLUEPRINTS = [
     ("Double Shower",               ItemClassification.useful),      # 50
     ("Scratcher",                   ItemClassification.useful),      # 100
     ("Swimming Pool",               ItemClassification.useful),      # 250
-    ("Decontamination Pod",         ItemClassification.useful),      # 400
+    ("Decontamination Pod",         ItemClassification.progression), # 400
     ("Exercise Plaza",              ItemClassification.useful),      # 400
     ("Wind Tunnel",                 ItemClassification.useful),      # 700
     ("Motivatorium",                ItemClassification.useful),      # 1200

@@ -275,6 +275,16 @@ class TimberbornWorld(World):
                 self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
             self.multiworld.early_items[self.player]["Blueprint: Levee"] = 1
             self.multiworld.early_items[self.player]["Blueprint: Gear Workshop"] = 1
+            # The first badtide comes on a fixed cycle whatever items arrived, and
+            # floodgates are the core badtide tool. Medium Tank holds the clean water.
+            # With Progressive Flood Control active, its first copy is the Floodgate.
+            # Sphere 1 must have room: without the starting Forester it is only the
+            # first slot of each shop path plus tier 1 milestones, which Forester,
+            # Stairs, Levee, Gear Workshop and the extra early survival picks
+            # already fill (fuzz: 19/10,000 fill failures when forced there too).
+            if self.options.starting_blueprints:
+                for building in ("Floodgate", "Medium Tank"):
+                    self.multiworld.early_items[self.player][self._item_for_building(building)] = 1
 
             # Randomly sample survival buildings into early spheres.
             # Each category picks 1 random candidate per seed for variety.
@@ -329,6 +339,13 @@ class TimberbornWorld(World):
         filler_needed = unfilled - items_created
         for _ in range(max(0, filler_needed)):
             self.multiworld.itempool.append(self.create_item(self._draw_resource_package()))
+
+    def _item_for_building(self, building: str) -> str:
+        """Pool item that unlocks *building* first: its progressive item or its blueprint."""
+        for prog, chain in (self._progressive_chains or {}).items():
+            if building in chain:
+                return prog
+        return f"Blueprint: {building}"
 
     def _starting_item_names(self) -> list[str]:
         """Item names of the starting blueprints; a chain member gives its first step."""
@@ -495,7 +512,6 @@ class TimberbornWorld(World):
             "wellbeing_goal": self.options.wellbeing_goal.value,
             "bots_goal": self.options.bots_goal.value,
             "water_storage_goal": self.options.water_storage_goal.value,
-            "drought_difficulty": self.options.drought_difficulty.value,
             "faction": self.faction,
             # Precollected blueprints; the server also sends them as items.
             "starting_items": list(self.starting_items or []),
