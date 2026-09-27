@@ -45,4 +45,10 @@ Each milestone type can be toggled on/off in the YAML settings.
 
 ## When the player receives an item, what happens?
 
-Items received from the server are applied immediately to your current session. Blueprints become available in the build menu; resource packages wait until finished storage that takes the good has room, then are delivered there; passive boosts apply globally.
+Items received from the server are applied immediately to your current session. Blueprints become available in the build menu and passive boosts apply globally.
+
+Resource packages are delivered according to the Goods Delivery option:
+- **district_center** *(default)*: into the District Center with the most beavers, the way the game gives your starting goods. Its workers haul the goods to storage, builders can use them right away, and beavers eat and drink from it. Goods it does not take go to storage.
+- **storage**: into finished storage buildings that take the good and have room.
+
+In both modes, goods that find no place wait and are delivered as soon as there is room.

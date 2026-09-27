@@ -275,6 +275,23 @@ class ResourcePackageSize(Range):
     default = 100
 
 
+class GoodsDelivery(Choice):
+    """
+    Where received resource packages are delivered in your colony.
+    - district_center: into the District Center with the most beavers, the way the game
+      gives your starting goods. Its workers haul the goods to storage, builders can use
+      them right away, and beavers eat and drink from it. Goods it does not take go to
+      storage.
+    - storage: into finished storage buildings (warehouses, piles, tanks) that take the
+      good and have room.
+    In both modes, goods that find no place wait and are delivered as soon as there is room.
+    """
+    display_name = "Goods Delivery"
+    option_district_center = 0
+    option_storage = 1
+    default = 0
+
+
 class ForceEarlyItems(Toggle):
     """
     When enabled, essential early-game blueprints (Forester, Stairs, Levee, Gear Workshop)
@@ -364,6 +381,7 @@ class TimberbornOptions(PerGameCommonOptions):
     include_resource_milestones: IncludeResourceMilestones
     resource_milestone_set: ResourceMilestoneSet
     resource_package_size: ResourcePackageSize
+    goods_delivery: GoodsDelivery
     force_early_items: ForceEarlyItems
     starting_blueprints: StartingBlueprints
     extra_early_survival: ExtraEarlySurvival

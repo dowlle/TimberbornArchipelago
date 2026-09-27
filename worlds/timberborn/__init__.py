@@ -505,6 +505,9 @@ class TimberbornWorld(World):
             # Percent applied to every resource package. The client treats a
             # missing value as 100 (seeds generated before this option).
             "resource_package_percent": self.options.resource_package_size.value,
+            # 0 = district_center, 1 = storage. The client treats a missing value as
+            # district_center (seeds generated before this option).
+            "goods_delivery": self.options.goods_delivery.value,
             # Final delivered amount and GoodId per package item this faction
             # can receive, so the client never derives amounts from item names.
             "resource_packages": {
