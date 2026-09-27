@@ -175,6 +175,47 @@ def set_rules(world: "TimberbornWorld") -> None:
     _set_branching_rules(world, player, mw, faction)
     _set_building_prerequisite_rules(world, player, mw, faction)
     _set_completion_condition(world, player, mw, faction)
+    _set_tier_placement_rules(world, player, mw)
+
+
+# ---------------------------------------------------------------------------
+# Tier-gated placement (#13)
+#
+# A Timberborn blueprint may only be placed in a Timberborn shop slot whose
+# tier is at least the blueprint's own construction tier, so a Smelter (tier 3)
+# never sits in a tier 1 slot that is reachable before metal. This is an item
+# rule, not an access rule: it limits where fill puts items and never changes
+# what a location needs. A progressive item counts as its first step. Items
+# without a tier (packages, traps, boosts, scouts, skips), other games' items
+# and Timberborn blueprints in other games' locations are unrestricted.
+# Starting items are precollected, never placed, so the rule does not see them.
+# ---------------------------------------------------------------------------
+
+def placement_tiers(faction: str, progressive_chains: dict[str, tuple[str, ...]] | None) -> dict[str, int]:
+    """Placement tier of every blueprint item of a faction, progressive items included."""
+    from .Items import get_building_names
+    tiers = {f"Blueprint: {name}": get_building_tier(name, faction)
+             for name in get_building_names(faction)}
+    for prog_name, chain in (progressive_chains or {}).items():
+        tiers[prog_name] = get_building_tier(chain[0], faction)
+    return tiers
+
+
+def item_placement_tier(item, multiworld) -> int:
+    """Tier an item needs from a Timberborn shop slot; 0 when unrestricted."""
+    if item.game != "Timberborn":
+        return 0
+    tiers = getattr(multiworld.worlds[item.player], "placement_tiers", None) or {}
+    return tiers.get(item.name, 0)
+
+
+def _set_tier_placement_rules(world, player, mw) -> None:
+    for entry in world.shop_layout:
+        loc = mw.get_location(entry["location_name"], player)
+        original = loc.item_rule
+        loc.item_rule = lambda item, t=entry["tier"], orig=original, m=mw: (
+            item_placement_tier(item, m) <= t and orig(item)
+        )
 
 
 def _set_branching_rules(world, player, mw, faction: str) -> None:

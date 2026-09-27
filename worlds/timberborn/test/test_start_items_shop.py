@@ -1,16 +1,19 @@
-"""Starting blueprints (#4), badwater gating for Explosives and Extract (#1)
-and permanent IDs."""
+"""Starting blueprints (#4), badwater gating for Explosives and Extract (#1),
+tier-gated shop placement (#13) and permanent IDs."""
 import json
 from pathlib import Path
 import unittest
 
-from BaseClasses import CollectionState
+from BaseClasses import CollectionState, Item, ItemClassification
+from Fill import distribute_items_restrictive
 
 from . import TimberbornTestBase
+from ..BuildingTiers import get_building_tier
 from ..Items import PROGRESSION_BLUEPRINTS, get_building_names, item_name_to_id
 from ..Locations import location_name_to_id
 from ..Rules import (BADWATER_SOURCES, EXPLOSIVES_CONSUMERS, EXTRACT_CONSUMERS,
-                     building_prerequisite_blueprints, wonder_blueprints)
+                     building_prerequisite_blueprints, item_placement_tier,
+                     wonder_blueprints)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -206,6 +209,58 @@ class TestFolktailsBadwaterGates(BadwaterGateChecks, TimberbornTestBase):
 class TestIronTeethBadwaterGates(BadwaterGateChecks, TimberbornTestBase):
     options = {"faction": 1, "progressive_items": 0}
     faction = "IronTeeth"
+
+
+# ---------------------------------------------------------------------------
+# Tier-gated placement (#13)
+# ---------------------------------------------------------------------------
+
+class _OtherGameItem(Item):
+    game = "Other Game"
+
+
+class PlacementChecks:
+    def test_rule_rejects_higher_tier_blueprints(self):
+        mw, p = self.multiworld, self.player
+        tier1 = next(e for e in self.world.shop_layout if e["tier"] == 1)
+        top = max(self.world.shop_layout, key=lambda e: e["tier"])
+        self.assertGreaterEqual(top["tier"], 3)
+        slot1 = mw.get_location(tier1["location_name"], p)
+        slot5 = mw.get_location(top["location_name"], p)
+        smelter = self.world.create_item("Blueprint: Smelter")
+        package = self.world.create_item("Package: Logs")
+        foreign = _OtherGameItem("Sword", ItemClassification.progression, 1, p)
+        self.assertFalse(slot1.item_rule(smelter))
+        self.assertTrue(slot5.item_rule(smelter))
+        self.assertTrue(slot1.item_rule(package))
+        self.assertTrue(slot1.item_rule(foreign))
+        self.assertEqual(item_placement_tier(self.world.create_item("Progressive Dynamite"), mw), 4)
+        milestone = mw.get_location("Population: First Beaver Born", p)
+        self.assertTrue(milestone.item_rule(smelter))
+
+    def test_fill_respects_slot_tiers(self):
+        distribute_items_restrictive(self.multiworld)
+        placed = 0
+        for entry in self.world.shop_layout:
+            item = self.multiworld.get_location(entry["location_name"], self.player).item
+            self.assertIsNotNone(item)
+            tier = item_placement_tier(item, self.multiworld)
+            self.assertLessEqual(tier, entry["tier"], f"{item.name} in {entry['location_name']}")
+            placed += tier > 0
+        self.assertGreater(placed, 0)
+        for name in self.world.placement_tiers:
+            if name.startswith("Blueprint: "):
+                building = name.removeprefix("Blueprint: ")
+                self.assertEqual(self.world.placement_tiers[name],
+                                 get_building_tier(building, self.world.faction))
+
+
+class TestFolktailsPlacement(PlacementChecks, TimberbornTestBase):
+    options = {"faction": 0}
+
+
+class TestIronTeethPlacement(PlacementChecks, TimberbornTestBase):
+    options = {"faction": 1}
 
 
 # ---------------------------------------------------------------------------

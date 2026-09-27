@@ -16,7 +16,7 @@ from .Locations import (TimberbornLocation, location_table, location_name_to_id,
 from .Options import TimberbornOptions
 from .ProgressiveItems import get_progressive_chains, get_building_to_progressive
 from .BuildingTiers import get_building_tier
-from .Rules import set_rules
+from .Rules import set_rules, placement_tiers
 
 
 import re
@@ -135,6 +135,8 @@ class TimberbornWorld(World):
     resolved_goals: set[str] | None = None
     _progressive_chains: dict[str, tuple[str, ...]] | None = None
     _water_packages: int = 0
+    # Item name -> tier a Timberborn shop slot must have to hold it (#13).
+    placement_tiers: dict[str, int] | None = None
     starting_items: list[str] | None = None
 
     # Starting blueprints (option starting_blueprints). The platform is the
@@ -159,6 +161,7 @@ class TimberbornWorld(World):
             }
         else:  # off
             self._progressive_chains = {}
+        self.placement_tiers = placement_tiers(self.faction, self._progressive_chains)
 
         menu = Region("Menu", self.player, self.multiworld)
         self.multiworld.regions.append(menu)
