@@ -125,6 +125,20 @@ class TimberbornWorld(World):
     web = TimberbornWebWorld()
     options_dataclass = TimberbornOptions
 
+    # Universal Tracker: slot_data carries every per-seed draw the rules read
+    # (shop layout with slot tiers, progressive chains, active milestones, goals,
+    # starting items) and the logic options, so UT can rebuild the seed's logic
+    # from slot_data alone, without a player YAML. See generate_early.
+    ut_can_gen_without_yaml = True
+    # Bumped when slot_data gains fields the reconstruction needs.
+    UT_SLOT_DATA_VERSION = 1
+    # Logic options restored from slot_data on a Universal Tracker re-generation.
+    _UT_OPTION_KEYS: tuple[str, ...] = (
+        "goal_requirement", "population_goal", "population_mode", "drought_cycles_goal",
+        "badtide_cycles_goal", "wellbeing_goal", "bots_goal", "water_storage_goal",
+        "logic_difficulty", "randomization_style",
+    )
+
     item_name_to_id = item_name_to_id
     location_name_to_id = location_name_to_id
 
@@ -144,15 +158,69 @@ class TimberbornWorld(World):
     # smallest one both factions share: Platform, 1x1x1, 6 planks, 100 science.
     STARTING_BLUEPRINTS: tuple[str, ...] = ("Forester", "Stairs", "Platform")
 
+    # -----------------------------------------------------------------
+    # Universal Tracker
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def interpret_slot_data(slot_data: dict) -> dict:
+        """UT hook: re-generate this world with the slot_data as re_gen_passthrough."""
+        return slot_data
+
+    def _ut_passthrough(self) -> dict | None:
+        return getattr(self.multiworld, "re_gen_passthrough", {}).get(self.game)
+
+    def generate_early(self) -> None:
+        passthrough = self._ut_passthrough()
+        if passthrough:
+            self._ut_restore_options(passthrough)
+
+    def _ut_restore_options(self, passthrough: dict) -> None:
+        """Restore the options the rules read from the connected seed's slot_data, so the
+        re-generation reasons about that seed and not the tracking player's YAML. Keys a
+        seed does not carry (older slot_data) keep the tracker's own values."""
+        options = self.options
+        if "faction" in passthrough:
+            options.faction.value = 1 if passthrough["faction"] == "IronTeeth" else 0
+        if passthrough.get("goals"):
+            options.goal_selection.value = set(passthrough["goals"])
+        for key in self._UT_OPTION_KEYS:
+            if key in passthrough:
+                getattr(options, key).value = passthrough[key]
+        if "starting_items" in passthrough:
+            options.starting_blueprints.value = int(bool(passthrough["starting_items"]))
+
+    def _ut_shop_layout(self, passthrough: dict) -> list[dict]:
+        """The seed's shop layout from slot_data (slot, building and tier per location)."""
+        layout = []
+        for position, entry in enumerate(passthrough["shop_layout"]):
+            level = int(entry["level"])
+            layout.append({
+                "path": entry["path"],
+                "level": level,
+                "slot": level + 1,
+                "location_name": self.location_id_to_name[int(entry["location_id"])],
+                "building_name": entry["building_name"],
+                "price": entry["price"],
+                "tier": int(entry["tier"]),
+                "global_pos": position,
+            })
+        return layout
+
     def create_regions(self) -> None:
         from .ShopLayout import generate_shop_layout
 
         # Determine faction
         self.faction = "IronTeeth" if self.options.faction.value == 1 else "Folktails"
+        passthrough = self._ut_passthrough()
 
         # Resolve progressive item chains based on option
         prog_opt = self.options.progressive_items.value
-        if prog_opt == 2:  # on
+        if passthrough and "progressive_chains" in passthrough:
+            # Universal Tracker: the seed's draw, not a new one.
+            self._progressive_chains = {name: tuple(chain) for name, chain
+                                        in passthrough["progressive_chains"].items()}
+        elif prog_opt == 2:  # on
             self._progressive_chains = get_progressive_chains(self.faction, True)
         elif prog_opt == 1:  # grouped_random
             all_chains = get_progressive_chains(self.faction, True)
@@ -186,6 +254,8 @@ class TimberbornWorld(World):
         if self.options.include_resource_milestones:
             self.active_milestones.extend(get_resource_milestones(
                 self.faction, self.options.resource_milestone_set.value))
+        if passthrough and "milestones" in passthrough:
+            self.active_milestones = [m["name"] for m in passthrough["milestones"]]
 
         for loc_name in self.active_milestones:
             loc_id = location_name_to_id[loc_name]
@@ -208,12 +278,15 @@ class TimberbornWorld(World):
 
         # Branching shop — 4 paths with sequential ordering
         building_names = get_building_names(self.faction)
-        self.shop_layout = generate_shop_layout(
-            self,
-            building_names,
-            self.options.max_science_cost.value,
-            self.options.science_cost_multiplier.value,
-        )
+        if passthrough and "shop_layout" in passthrough:
+            self.shop_layout = self._ut_shop_layout(passthrough)
+        else:
+            self.shop_layout = generate_shop_layout(
+                self,
+                building_names,
+                self.options.max_science_cost.value,
+                self.options.science_cost_multiplier.value,
+            )
         shop_region = Region("Shop", self.player, self.multiworld)
         self.multiworld.regions.append(shop_region)
         menu.connect(shop_region)
@@ -258,8 +331,15 @@ class TimberbornWorld(World):
 
         # Starting blueprints leave the pool and go to the start inventory.
         self.starting_items = []
-        if self.options.starting_blueprints:
-            for item_name in self._starting_item_names():
+        passthrough = self._ut_passthrough()
+        if passthrough and "starting_items" in passthrough:
+            starting = list(passthrough["starting_items"])
+        elif self.options.starting_blueprints:
+            starting = self._starting_item_names()
+        else:
+            starting = []
+        if starting:
+            for item_name in starting:
                 blueprint_items.remove(item_name)
                 self.multiworld.push_precollected(self.create_item(item_name))
                 self.starting_items.append(item_name)
@@ -524,6 +604,9 @@ class TimberbornWorld(World):
             # 0 = district_center, 1 = storage. The client treats a missing value as
             # district_center (seeds generated before this option).
             "goods_delivery": self.options.goods_delivery.value,
+            # Universal Tracker reconstruction (see generate_early).
+            "logic_difficulty": self.options.logic_difficulty.value,
+            "ut_version": self.UT_SLOT_DATA_VERSION,
             # Final delivered amount and GoodId per package item this faction
             # can receive, so the client never derives amounts from item names.
             "resource_packages": {
