@@ -15,8 +15,8 @@ class TestPermanentItemIds(unittest.TestCase):
                 self.assertEqual(item_name_to_id[name], code)
 
     def test_new_ids_are_unique_and_valve_is_not_duplicated(self):
-        self.assertEqual(len(item_name_to_id), 203)
-        self.assertEqual(len(set(item_name_to_id.values())), 203)
+        self.assertEqual(len(item_name_to_id), 236)  # 203 + 33 resource packages
+        self.assertEqual(len(set(item_name_to_id.values())), 236)
         self.assertIn("Blueprint: Valve", item_name_to_id)
         self.assertNotIn("Blueprint: Throttling Valve", item_name_to_id)
 

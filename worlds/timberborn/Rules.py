@@ -1,3 +1,5 @@
+import re
+
 from BaseClasses import CollectionState
 from typing import TYPE_CHECKING
 
@@ -69,8 +71,8 @@ def can_produce_explosives(state: CollectionState, player: int, faction: str = "
     return has(state, player, "Explosives Factory") and can_produce_metal(state, player, faction)
 
 def can_produce_extract(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
-    """Refinery converts Badwater → Extract."""
-    return has(state, player, "Refinery") and can_produce_metal(state, player, faction)
+    """Centrifuge converts Badwater → Extract (Refinery makes Biofuel and Catalyst)."""
+    return resource_chain_met("Extract", 10, state, player, faction)
 
 def can_build_bots(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
     return (has(state, player, "Bot Part Factory")
@@ -275,25 +277,104 @@ MILESTONE_TIERS: dict[str, int] = {
     # Wonder (both factions)
     "Wonder: Complete Earth Recultivator": 5,
     "Wonder: Complete Earth Repopulator":  5,
-    # Resource thresholds
-    "Resource: Reach 500 Logs":            1,
-    "Resource: Reach 1000 Logs":           1,
-    "Resource: Reach 500 Planks":          2,
-    "Resource: Reach 1000 Planks":         2,
-    "Resource: Reach 100 Gears":           2,
-    "Resource: Reach 250 Gears":           2,
-    "Resource: Reach 500 Bread":           2,
-    "Resource: Reach 100 Metal Blocks":    3,
-    "Resource: Reach 250 Metal Blocks":    3,
-    "Resource: Reach 100 Treated Planks":  4,
-    "Resource: Reach 250 Treated Planks":  4,
-    "Resource: Reach 100 Scrap Metal":     3,
-    "Resource: Reach 250 Scrap Metal":     3,
+    # Resource milestones use RESOURCE_CHAINS below, not a tier.
 }
+
+
+# ---------------------------------------------------------------------------
+# Resource milestone production chains
+#
+# A resource milestone is in logic once the player owns every blueprint of the
+# good's production chain and can make the materials those buildings cost
+# ("gears", "metal", "treated"). Received resource packages never count.
+# Material needs come from the chain buildings' BuildingCost in the 1.1
+# blueprints; Metal Parts come from Metalsmith, whose scrap is free for Iron
+# Teeth. This deliberately avoids the tier bundles: tier 5 would demand the
+# whole bot chain for any building that costs Metal Parts.
+# ---------------------------------------------------------------------------
+_SHARED_CHAINS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    # good:           (blueprints, materials)
+    "Logs":           ((), ()),
+    "Planks":         ((), ()),
+    "Berries":        ((), ()),
+    "Water":          ((), ()),
+    "Gears":          ((), ("gears",)),
+    "Pine Resin":     (("Tapper's Shack",), ("gears",)),
+    "Treated Planks": ((), ("treated",)),
+    "Metal Blocks":   ((), ("metal",)),
+}
+
+RESOURCE_CHAINS: dict[str, dict[str, tuple[tuple[str, ...], tuple[str, ...]]]] = {
+    "Folktails": {
+        **_SHARED_CHAINS,
+        "Scrap Metal":      (("Scavenger Flag",), ()),
+        "Extract":          (("Badwater Pump", "Centrifuge"), ("metal",)),
+        "Explosives":       (("Badwater Pump", "Explosives Factory"), ("metal",)),
+        "Bread":            (("Gristmill", "Bakery"), ("gears",)),
+        "Paper":            (("Paper Mill",), ("gears",)),
+        "Grilled Potatoes": ((), ()),
+        "Cattail Crackers": (("Aquatic Farmhouse", "Gristmill", "Bakery"), ("gears",)),
+        "Maple Pastries":   (("Gristmill", "Bakery", "Tapper's Shack"), ("gears",)),
+        "Books":            (("Paper Mill", "Printing Press"), ("metal",)),
+        "Biofuel":          (("Refinery",), ("metal",)),
+        "Antidote":         (("Herbalist", "Paper Mill"), ("gears",)),
+    },
+    "IronTeeth": {
+        **_SHARED_CHAINS,
+        "Scrap Metal":       ((), ()),
+        "Extract":           (("Metalsmith", "Deep Badwater Pump", "Centrifuge"), ("metal",)),
+        "Explosives":        (("Metalsmith", "Deep Badwater Pump", "Explosives Factory"), ("metal",)),
+        "Corn Rations":      (("Food Factory",), ("metal",)),
+        "Fermented Cassava": ((), ()),
+        "Kohlrabi":          ((), ()),
+        "Mangrove Fruit":    (("Forester",), ()),
+        "Metal Parts":       (("Metalsmith",), ()),
+        "Eggplant Rations":  (("Food Factory", "Metalsmith", "Oil Press"), ("metal",)),
+        "Fermented Soybean": (("Metalsmith", "Oil Press"), ()),
+        "Coffee":            (("Coffee Brewery",), ("treated", "metal")),
+        "Grease":            (("Grease Factory", "Centrifuge", "Metalsmith", "Oil Press",
+                               "Deep Badwater Pump"), ("treated", "metal")),
+    },
+}
+
+# Liquids live in tanks. Small Tanks hold 30, so 250 or more needs Medium Tank.
+LIQUID_GOODS: set[str] = {"Water", "Extract", "Antidote", "Biofuel", "Coffee", "Grease"}
+LARGE_LIQUID_THRESHOLD = 250
+
+
+def parse_resource_milestone(name: str) -> tuple[str, int]:
+    """Parse "Resource: Reach 25 Metal Blocks" into ("Metal Blocks", 25)."""
+    match = re.fullmatch(r"Resource: Reach (\d+) (.+)", name)
+    if not match:
+        raise ValueError(f"Not a resource milestone: {name}")
+    return match.group(2), int(match.group(1))
+
+
+def resource_chain_blueprints(good: str, threshold: int, faction: str) -> tuple[str, ...]:
+    """Every blueprint a milestone for *good* requires, materials included."""
+    buildings, materials = RESOURCE_CHAINS[faction][good]
+    required = list(buildings)
+    if good in LIQUID_GOODS and threshold >= LARGE_LIQUID_THRESHOLD:
+        required.append("Medium Tank")
+        materials = materials + ("gears",)
+    if "gears" in materials or "metal" in materials or "treated" in materials:
+        required += ["Gear Workshop", "Forester"]
+    if "metal" in materials:
+        required += ["Smelter"] + (["Scavenger Flag"] if faction == "Folktails" else [])
+    if "treated" in materials:
+        required += ["Tapper's Shack", "Wood Workshop"]
+    return tuple(dict.fromkeys(required))
+
+
+def resource_chain_met(good: str, threshold: int, state: CollectionState, player: int,
+                       faction: str = "Folktails") -> bool:
+    return has_all(state, player, *resource_chain_blueprints(good, threshold, faction))
 
 
 def _set_milestone_rules(world, player, mw, faction: str) -> None:
     """Gate milestones by tier so they appear in proper logic spheres.
+
+    Resource milestones are gated by their production chain instead.
 
     In strict mode, survival milestones also require specific buildings
     (Levee, Floodgate, Stairs, Medium Tank) that are practically needed
@@ -302,8 +383,14 @@ def _set_milestone_rules(world, player, mw, faction: str) -> None:
     strict = world.options.logic_difficulty.value == 1
 
     for loc_name in world.active_milestones:
-        tier = MILESTONE_TIERS.get(loc_name, 1)
         loc = mw.get_location(loc_name, player)
+        if loc_name.startswith("Resource:"):
+            good, threshold = parse_resource_milestone(loc_name)
+            required = resource_chain_blueprints(good, threshold, faction)
+            loc.access_rule = lambda state, p=player, req=required: has_all(state, p, *req)
+            continue
+
+        tier = MILESTONE_TIERS.get(loc_name, 1)
 
         if strict and loc_name in STRICT_MILESTONE_REQUIREMENTS:
             required = STRICT_MILESTONE_REQUIREMENTS[loc_name]

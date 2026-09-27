@@ -22,7 +22,7 @@ The goal is configurable:
 - **Blueprints** — 126 individual building unlocks (e.g., *Forester*, *Gear Workshop*, *Smelter*).
 - **Passive Boosts** — faster movement, increased carrying capacity, faster working speed, faster tree growth, longer life expectancy.
 - **Skip** — lets you check a shop location for free (bypasses science cost).
-- **Filler** — resource care packages (50 Logs, 20 Planks, etc.).
+- **Resource packages** — goods for your faction, such as *Package: Logs* (100 Logs) or *Package: Bread* (60 Bread). The Resource Package Size option scales every amount (10% to 1000%).
 - **Traps** *(optional)* — negative effects like *Hazardous Weather* (triggers an early drought or badtide) or *Hungry Beavers*.
 
 ## What does another player's item look like in my game?
@@ -37,9 +37,10 @@ In addition to shop locations, milestone locations trigger automatically as you 
 - **Well-being milestones** — reaching well-being levels 5/10/15/20
 - **Survival milestones** — surviving 1st/5th/10th drought, 1st/5th/10th badtide
 - **Wonder milestone** — completing the Earth Recultivator
+- **Resource milestones** — reaching a stock of a good, such as 25 Gears or 500 Logs. Resource Milestone Set picks classic (13), lite (31) or full (61, default). Each is in logic once you have the buildings that produce the good.
 
 Each milestone type can be toggled on/off in the YAML settings.
 
 ## When the player receives an item, what happens?
 
-Items received from the server are applied immediately to your current session. Blueprints become available in the build menu; resource bundles are deposited at your nearest District Center; passive boosts apply globally.
+Items received from the server are applied immediately to your current session. Blueprints become available in the build menu; resource packages wait until finished storage that takes the good has room, then are delivered there; passive boosts apply globally.

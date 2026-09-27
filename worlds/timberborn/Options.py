@@ -237,9 +237,42 @@ class IncludeWonderMilestone(Toggle):
 class IncludeResourceMilestones(Toggle):
     """Include resource-threshold milestone locations (e.g. Reach 500 Logs, Reach 250 Metal Blocks).
     Each location fires once when your global resource count first passes the threshold.
-    Provides mid-game progression anchors tied to your production chain development."""
+    Provides mid-game progression anchors tied to your production chain development.
+    Resource Milestone Set chooses how many are included."""
     display_name = "Include Resource Milestones"
     default = 1
+
+
+class ResourceMilestoneSet(Choice):
+    """
+    Which resource milestones are included when Include Resource Milestones is on.
+    Each milestone fires when your stock of that good first reaches the threshold.
+    A milestone is only in logic once you can produce the good with your own
+    buildings; received resource packages never count for logic.
+    - classic: the original 13 milestones (Logs, Planks, Gears, Metal Blocks,
+      Treated Planks, Scrap Metal, and 500 Bread or 500 Corn Rations).
+    - lite: classic plus 18 early steps (10, 25 and 50 of the classic goods,
+      100 and 250 Logs, 50 and 100 Planks).
+    - full: lite plus 30 more milestones for other goods of your faction
+      (food, Pine Resin, Water, Extract, Explosives and more). 61 in total.
+    """
+    display_name = "Resource Milestone Set"
+    option_classic = 0
+    option_lite = 1
+    option_full = 2
+    default = 2
+
+
+class ResourcePackageSize(Range):
+    """
+    Percentage applied to the amount of every resource package you receive.
+    100 = default amounts (for example 100 Logs or 60 Bread), 50 = half, 300 = triple.
+    Amounts are rounded, and every package delivers at least 1.
+    """
+    display_name = "Resource Package Size"
+    range_start = 10
+    range_end = 1000
+    default = 100
 
 
 class ForceEarlyItems(Toggle):
@@ -312,6 +345,8 @@ class TimberbornOptions(PerGameCommonOptions):
     include_survival_milestones: IncludeSurvivalMilestones
     include_wonder_milestone: IncludeWonderMilestone
     include_resource_milestones: IncludeResourceMilestones
+    resource_milestone_set: ResourceMilestoneSet
+    resource_package_size: ResourcePackageSize
     force_early_items: ForceEarlyItems
     extra_early_survival: ExtraEarlySurvival
     logic_difficulty: LogicDifficulty

@@ -45,16 +45,16 @@ WOOD_BLUEPRINTS = [
     ("Forester",                    ItemClassification.progression), # 30   S
     ("Gear Workshop",               ItemClassification.progression), # 100  S
     ("Paper Mill",                  ItemClassification.progression), # 250  F
-    ("Printing Press",              ItemClassification.useful),      # 400  F
+    ("Printing Press",              ItemClassification.progression), # 400  F
     ("Tapper's Shack",              ItemClassification.progression), # 500  S
     ("Wood Workshop",               ItemClassification.progression), # 800  S
 ]
 
 # --- FOOD ---
 FOOD_BLUEPRINTS = [
-    ("Aquatic Farmhouse",           ItemClassification.useful),      # 150  F
+    ("Aquatic Farmhouse",           ItemClassification.progression), # 150  F
     ("Bakery",                      ItemClassification.progression), # 160  F
-    ("Gristmill",                   ItemClassification.useful),      # 180  F
+    ("Gristmill",                   ItemClassification.progression), # 180  F
     ("Beehive",                     ItemClassification.useful),      # 400  F
 ]
 
@@ -76,12 +76,12 @@ STORAGE_BLUEPRINTS = [
 # --- WATER ---
 WATER_BLUEPRINTS = [
     ("Compact Mechanical Pump",     ItemClassification.useful),      # 4000 S
-    ("Badwater Pump",               ItemClassification.useful),      # 250  F
+    ("Badwater Pump",               ItemClassification.progression), # 250  F
     ("Fill Valve",                  ItemClassification.useful),      # 300  S
     ("Fluid Dump",                  ItemClassification.useful),      # 250  S
     ("Large Water Pump",            ItemClassification.progression), # 400  F
     ("Aquifer Drill",               ItemClassification.useful),      # 400  S
-    ("Centrifuge",                  ItemClassification.useful),      # 600  S
+    ("Centrifuge",                  ItemClassification.progression), # 600  S
     ("Badwater Dome",               ItemClassification.useful),      # 2000 F
     ("Mechanical Fluid Pump",       ItemClassification.useful),      # 2500 F
     ("Badwater Rig",                ItemClassification.useful),      # 4000 F
@@ -146,7 +146,7 @@ WELLBEING_BLUEPRINTS = [
     ("Medical Bed",                 ItemClassification.progression),  # 80   S
     ("Contemplation Spot",          ItemClassification.useful),      # 100  F
     ("Lido",                        ItemClassification.useful),      # 250  F
-    ("Herbalist",                   ItemClassification.useful),      # 300  F
+    ("Herbalist",                   ItemClassification.progression), # 300  F
     ("Agora",                       ItemClassification.useful),      # 400  F
     ("Carousel",                    ItemClassification.useful),      # 700  F
     ("Detailer",                    ItemClassification.useful),      # 1000 S
@@ -269,10 +269,10 @@ IT_WOOD_BLUEPRINTS: list[tuple[str, ItemClassification]] = [
 # --- IT FOOD ---
 IT_FOOD_BLUEPRINTS = [
     # FarmHouse (SC=0) and Fermenter (SC=0) are free
-    ("Oil Press",                   ItemClassification.useful),      # 120
+    ("Oil Press",                   ItemClassification.progression), # 120
     ("Hydroponic Garden",           ItemClassification.useful),      # 200
-    ("Food Factory",                ItemClassification.useful),      # 300
-    ("Coffee Brewery",              ItemClassification.useful),      # 500
+    ("Food Factory",                ItemClassification.progression), # 300
+    ("Coffee Brewery",              ItemClassification.progression), # 500
 ]
 
 # --- IT HOUSING ---
@@ -292,7 +292,7 @@ IT_STORAGE_BLUEPRINTS: list[tuple[str, ItemClassification]] = [
 # --- IT WATER ---
 IT_WATER_BLUEPRINTS = [
     # DeepWaterPump (SC=0) is free
-    ("Deep Badwater Pump",          ItemClassification.useful),      # 250
+    ("Deep Badwater Pump",          ItemClassification.progression), # 250
     ("Deep Mechanical Fluid Pump",  ItemClassification.useful),      # 2500
     ("Badwater Discharge",          ItemClassification.useful),      # 4000
 ]
@@ -320,7 +320,7 @@ IT_SCIENCE_BLUEPRINTS = [
     ("Charging Station",            ItemClassification.useful),      # 200
     ("Control Tower",               ItemClassification.useful),      # 1000
     ("Numbercruncher",              ItemClassification.useful),      # 1500
-    ("Grease Factory",              ItemClassification.useful),      # 2000
+    ("Grease Factory",              ItemClassification.progression), # 2000
 ]
 
 # --- IT WELLBEING ---
@@ -445,7 +445,8 @@ SCOUT_ITEMS: list[tuple[str, ItemClassification]] = [
 ]
 
 # ---------------------------------------------------------------------------
-# Filler — resource care packages delivered to nearest District Center
+# Legacy filler — fixed-amount resource items from seeds generated before the
+# resource packages below. Kept so existing seeds and IDs keep working.
 # ---------------------------------------------------------------------------
 FILLER_ITEMS: list[tuple[str, ItemClassification, int]] = [
     # name,                              classification,              count
@@ -457,6 +458,71 @@ FILLER_ITEMS: list[tuple[str, ItemClassification, int]] = [
     ("Filler: 10 Treated Planks",       ItemClassification.filler,   3),
     ("Filler: 5 Scrap Metal",           ItemClassification.filler,   3),
 ]
+
+# ---------------------------------------------------------------------------
+# Resource packages — goods delivered to storage, drawn into the pool by
+# faction weight. Names carry no amount: the delivered amount is the base
+# amount scaled by the resource_package_size option, and slot_data tells the
+# client the final amount. The legacy "Filler: N Good" items above keep their
+# names and IDs for existing seeds but are no longer placed.
+# ---------------------------------------------------------------------------
+RESOURCE_PACKAGES: list[tuple[str, str, int, int, int]] = [
+    # name,                            good id,             base, FT, IT weight
+    ("Package: Logs",                 "Log",                100,  4, 4),
+    ("Package: Planks",               "Plank",              50,   5, 5),
+    ("Package: Gears",                "Gear",               25,   5, 5),
+    ("Package: Treated Planks",       "TreatedPlank",       20,   4, 4),
+    ("Package: Metal Blocks",         "MetalBlock",         15,   5, 4),
+    ("Package: Scrap Metal",          "ScrapMetal",         30,   3, 2),
+    ("Package: Pine Resin",           "PineResin",          20,   2, 3),
+    ("Package: Extract",              "Extract",            15,   2, 2),
+    ("Package: Explosives",           "Explosives",         10,   1, 1),
+    ("Package: Water",                "Water",              60,   3, 3),
+    ("Package: Berries",              "Berries",            60,   2, 2),
+    ("Package: Dirt",                 "Dirt",               40,   0, 1),
+    ("Package: Paper",                "Paper",              40,   2, 0),
+    ("Package: Books",                "Book",               10,   1, 0),
+    ("Package: Antidote",             "Antidote",           10,   1, 0),
+    ("Package: Biofuel",              "Biofuel",            25,   1, 0),
+    ("Package: Bread",                "Bread",              60,   4, 0),
+    ("Package: Grilled Potatoes",     "GrilledPotato",      60,   3, 0),
+    ("Package: Cattail Crackers",     "CattailCracker",     60,   2, 0),
+    ("Package: Maple Pastries",       "MaplePastry",        30,   2, 0),
+    ("Package: Grilled Chestnuts",    "GrilledChestnut",    40,   1, 0),
+    ("Package: Grilled Spadderdock",  "GrilledSpadderdock", 45,   1, 0),
+    ("Package: Carrots",              "Carrot",             40,   1, 0),
+    ("Package: Sunflower Seeds",      "SunflowerSeeds",     30,   1, 0),
+    ("Package: Metal Parts",          "MetalPart",          10,   0, 2),
+    ("Package: Coffee",               "Coffee",             30,   0, 2),
+    ("Package: Grease",               "Grease",             10,   0, 1),
+    ("Package: Corn Rations",         "CornRation",         60,   0, 4),
+    ("Package: Fermented Cassava",    "FermentedCassava",   60,   0, 3),
+    ("Package: Eggplant Rations",     "EggplantRation",     60,   0, 2),
+    ("Package: Fermented Soybean",    "FermentedSoybean",   60,   0, 2),
+    ("Package: Kohlrabi",             "Kohlrabi",           40,   0, 2),
+    ("Package: Mangrove Fruit",       "MangroveFruit",      40,   0, 2),
+]
+
+RESOURCE_PACKAGE_GOODS: dict[str, str] = {name: good for name, good, _, _, _ in RESOURCE_PACKAGES}
+RESOURCE_PACKAGE_BASE_AMOUNTS: dict[str, int] = {
+    name: amount for name, _, amount, _, _ in RESOURCE_PACKAGES
+}
+
+
+def get_resource_package_weights(faction: str) -> dict[str, int]:
+    """Pool weight of every resource package the faction can store (weight > 0)."""
+    column = 4 if faction == "IronTeeth" else 3
+    return {row[0]: row[column] for row in RESOURCE_PACKAGES if row[column] > 0}
+
+
+def scale_package_amount(base_amount: int, percent: int) -> int:
+    """Base amount scaled by a percentage, rounded half up, at least 1.
+
+    Integer arithmetic so the client (ResourcePackages.ScaleAmount) gets
+    exactly the same result.
+    """
+    return max(1, (base_amount * percent + 50) // 100)
+
 
 # ---------------------------------------------------------------------------
 # Traps — negative effects sent from/to other players
@@ -512,6 +578,14 @@ for name, classification, count in FILLER_ITEMS:
     item_table[name] = {
         "classification": classification,
         "count": count,
+        "id": ITEM_IDS[name],
+    }
+
+# Resource packages — count is decided at generation time by faction weight
+for name, _, _, _, _ in RESOURCE_PACKAGES:
+    item_table[name] = {
+        "classification": ItemClassification.filler,
+        "count": 0,
         "id": ITEM_IDS[name],
     }
 

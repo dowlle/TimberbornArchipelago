@@ -67,7 +67,8 @@ class TestDefaultGeneration(TimberbornTestBase):
         self.assertEqual(len(ALL_BUILDING_NAMES), 132)
         self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 19)  # 18 FT + 1 IT wonder
         from ..Locations import RESOURCE_MILESTONE_LOCATIONS
-        # Total: pre-allocated shop slots + milestone locations + resource milestone locations
+        # Total: pre-allocated shop slots + milestone locations + resource milestone IDs
+        # (both factions; each player gets a faction-specific subset)
         total = len(location_name_to_id)
         expected_slots = 4 * 40  # NUM_PATHS * SLOTS_PER_PATH
         expected = expected_slots + 19 + len(RESOURCE_MILESTONE_LOCATIONS)
@@ -258,11 +259,11 @@ class TestAllMilestonesDisabled(TimberbornTestBase):
 
 class TestSlotDataMilestones(TimberbornTestBase):
     def test_milestones_in_slot_data(self):
-        from ..Locations import RESOURCE_MILESTONE_LOCATIONS
+        from ..Locations import FT_RESOURCE_MILESTONE_LOCATIONS
         slot_data = self.world.fill_slot_data()
         self.assertIn("milestones", slot_data)
-        # 7 pop + 4 wellbeing + 6 survival + 1 FT wonder + 13 resource = 31
-        expected = 18 + len(RESOURCE_MILESTONE_LOCATIONS)
+        # 7 pop + 4 wellbeing + 6 survival + 1 FT wonder + 61 resource (full set) = 79
+        expected = 18 + len(FT_RESOURCE_MILESTONE_LOCATIONS)
         self.assertEqual(len(slot_data["milestones"]), expected)
 
     def test_milestone_metadata_fields(self):
@@ -437,10 +438,10 @@ class TestProgressiveItemsIT(TimberbornITTestBase):
 
 class TestITSlotDataMilestones(TimberbornITTestBase):
     def test_milestones_in_slot_data(self):
-        from ..Locations import RESOURCE_MILESTONE_LOCATIONS
+        from ..Locations import IT_RESOURCE_MILESTONE_LOCATIONS
         slot_data = self.world.fill_slot_data()
         self.assertIn("milestones", slot_data)
-        expected = 18 + len(RESOURCE_MILESTONE_LOCATIONS)
+        expected = 18 + len(IT_RESOURCE_MILESTONE_LOCATIONS)
         self.assertEqual(len(slot_data["milestones"]), expected)
 
     def test_wonder_is_earth_repopulator(self):
