@@ -223,20 +223,21 @@ class PlacementChecks:
     def test_rule_rejects_higher_tier_blueprints(self):
         mw, p = self.multiworld, self.player
         tier1 = next(e for e in self.world.shop_layout if e["tier"] == 1)
-        top = max(self.world.shop_layout, key=lambda e: e["tier"])
-        self.assertGreaterEqual(top["tier"], 3)
+        tier2 = next(e for e in self.world.shop_layout if e["tier"] == 2)
         slot1 = mw.get_location(tier1["location_name"], p)
-        slot5 = mw.get_location(top["location_name"], p)
+        slot2 = mw.get_location(tier2["location_name"], p)
         smelter = self.world.create_item("Blueprint: Smelter")
         package = self.world.create_item("Package: Logs")
         foreign = _OtherGameItem("Sword", ItemClassification.progression, 1, p)
         self.assertFalse(slot1.item_rule(smelter))
-        self.assertTrue(slot5.item_rule(smelter))
+        self.assertTrue(slot2.item_rule(smelter))
         self.assertTrue(slot1.item_rule(package))
         self.assertTrue(slot1.item_rule(foreign))
-        self.assertEqual(item_placement_tier(self.world.create_item("Progressive Dynamite"), mw), 4)
-        milestone = mw.get_location("Population: First Beaver Born", p)
-        self.assertTrue(milestone.item_rule(smelter))
+        if "Progressive Dynamite" in (self.world._progressive_chains or {}):
+            self.assertEqual(item_placement_tier(self.world.create_item("Progressive Dynamite"), mw), 4)
+        if self.world.options.include_population_milestones:
+            milestone = mw.get_location("Population: First Beaver Born", p)
+            self.assertTrue(milestone.item_rule(smelter))
 
     def test_fill_respects_slot_tiers(self):
         distribute_items_restrictive(self.multiworld)
@@ -248,11 +249,64 @@ class PlacementChecks:
             self.assertLessEqual(tier, entry["tier"], f"{item.name} in {entry['location_name']}")
             placed += tier > 0
         self.assertGreater(placed, 0)
-        for name in self.world.placement_tiers:
+
+    def test_placement_tier_follows_access_requirement(self):
+        from ..Rules import slot_required_blueprints
+        faction = self.world.faction
+        opens: dict[str, int] = {}
+        for entry in self.world.shop_layout:
+            for building in slot_required_blueprints(entry, faction):
+                opens[building] = min(opens.get(building, 99), entry["tier"])
+        early = set(self.multiworld.early_items[self.player])
+        chains = self.world._progressive_chains or {}
+        for name, tier in self.world.placement_tiers.items():
             if name.startswith("Blueprint: "):
-                building = name.removeprefix("Blueprint: ")
-                self.assertEqual(self.world.placement_tiers[name],
-                                 get_building_tier(building, self.world.faction))
+                buildings = [name.removeprefix("Blueprint: ")]
+            else:
+                buildings = list(chains[name])
+            material = get_building_tier(buildings[0], faction)
+            expected = material
+            for building in buildings:
+                if building in opens:
+                    expected = max(1, min(expected, opens[building] - 1))
+            if name in early:
+                expected = 1
+            self.assertEqual(tier, expected, name)
+        # The Smelter opens tier 3, so it may sit in tier 2 but never in tier 1.
+        self.assertEqual(self.world.placement_tiers["Blueprint: Smelter"], 2)
+
+
+    def test_capacity_starts_feasible(self):
+        """Every tier has at least as many slots as blueprints that need it."""
+        capacity = self.world.shop_capacity
+        for tier in range(2, 6):
+            slots = sum(len(capacity.slots_by_tier[t]) for t in range(tier, 6))
+            need = sum(1 for _, t in capacity.restricted_items() if t >= tier)
+            self.assertGreaterEqual(slots, need, f"tier {tier}")
+
+    def test_capacity_blocks_low_items_when_tight(self):
+        """A lower item may take a high slot only while every tier it covers keeps room."""
+        capacity = self.world.shop_capacity
+        top = max(t for t, slots in capacity.slots_by_tier.items() if slots)
+        slots = [s for t in range(top, 6) for s in capacity.slots_by_tier[t]]
+        need = [item for item, t in capacity.restricted_items() if t >= top]
+
+        def room(tier):
+            free = sum(len(capacity.slots_by_tier[t]) for t in range(tier, 6))
+            return free - sum(1 for _, t in capacity.restricted_items() if t >= tier)
+
+        spare = min(room(t) for t in range(2, top + 1))
+        package = self.world.create_item("Package: Logs")
+        # Fill exactly the spare room with packages; the next one is refused.
+        for slot in slots[:spare]:
+            self.assertTrue(slot.item_rule(package))
+            slot.item = package
+        free = [s for s in slots if s.item is None]
+        self.assertTrue(free)
+        self.assertFalse(free[0].item_rule(package))
+        self.assertTrue(free[0].item_rule(need[0]))
+        for slot in slots[:spare]:
+            slot.item = None
 
 
 class TestFolktailsPlacement(PlacementChecks, TimberbornTestBase):
@@ -261,6 +315,23 @@ class TestFolktailsPlacement(PlacementChecks, TimberbornTestBase):
 
 class TestIronTeethPlacement(PlacementChecks, TimberbornTestBase):
     options = {"faction": 1}
+
+
+_NO_MILESTONES = {
+    "include_population_milestones": 0, "include_wellbeing_milestones": 0,
+    "include_survival_milestones": 0, "include_wonder_milestone": 0,
+    "include_resource_milestones": 0, "starting_blueprints": 0,
+}
+
+
+class TestFolktailsPlacementNoMilestones(PlacementChecks, TimberbornTestBase):
+    """Almost no location outside the shop: the case that failed before (#13)."""
+    options = {"faction": 0, "goal_selection": ["Population"], **_NO_MILESTONES}
+
+
+class TestIronTeethPlacementNoMilestones(PlacementChecks, TimberbornTestBase):
+    options = {"faction": 1, "goal_selection": ["Population"], "progressive_items": 0,
+               **_NO_MILESTONES}
 
 
 # ---------------------------------------------------------------------------

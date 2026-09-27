@@ -16,7 +16,7 @@ from .Locations import (TimberbornLocation, location_table, location_name_to_id,
 from .Options import TimberbornOptions
 from .ProgressiveItems import get_progressive_chains, get_building_to_progressive
 from .BuildingTiers import get_building_tier
-from .Rules import set_rules, placement_tiers
+from .Rules import set_rules
 
 
 import re
@@ -137,6 +137,7 @@ class TimberbornWorld(World):
     _water_packages: int = 0
     # Item name -> tier a Timberborn shop slot must have to hold it (#13).
     placement_tiers: dict[str, int] | None = None
+    shop_capacity = None  # Rules.ShopCapacity, set in set_rules
     starting_items: list[str] | None = None
 
     # Starting blueprints (option starting_blueprints). The platform is the
@@ -161,7 +162,6 @@ class TimberbornWorld(World):
             }
         else:  # off
             self._progressive_chains = {}
-        self.placement_tiers = placement_tiers(self.faction, self._progressive_chains)
 
         menu = Region("Menu", self.player, self.multiworld)
         self.multiworld.regions.append(menu)
@@ -437,6 +437,25 @@ class TimberbornWorld(World):
 
     def set_rules(self) -> None:
         set_rules(self)
+
+    def fill_hook(self, progitempool, usefulitempool, filleritempool, fill_locations) -> None:
+        """Place this world's tier-restricted blueprints first, highest tier first (#13).
+
+        Shop slot tiers are nested (a tier 4 blueprint fits every slot a tier 5
+        one fits, and more), so placing the most restricted items first never
+        uses up a slot a later item needed. Fill pops items from the end of
+        each pool, so these items go to the end in ascending tier. No
+        blueprint is filler, so the filler pool needs no ordering.
+        """
+        tiers = self.placement_tiers or {}
+
+        def tier(item) -> int:
+            if item.player != self.player or item.game != self.game:
+                return 0
+            return tiers.get(item.name, 0)
+
+        usefulitempool.sort(key=tier)
+        progitempool.sort(key=tier)
 
     def collect_item(self, state: CollectionState, item: Item,
                      remove: bool = False) -> Optional[str]:

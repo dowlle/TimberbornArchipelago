@@ -27,7 +27,7 @@ The goal is configurable:
 
 ## What does another player's item look like in my game?
 
-The AP Shop presents abstract locations (e.g., "A-01", "B-05") with escalating science costs. Purchasing a location sends a check to the server — you don't know what item you'll send until you buy it. The shop is gated by 5 tiers that unlock as you receive key progression items (Gear Workshop, Scavenger Flag, Smelter, etc.). A blueprint is only placed in a shop slot of its own tier or higher, so a Smelter never sits in a tier 1 slot. A locked path shows what it still needs, such as the previous check, missing blueprints or more science, without revealing the item.
+The AP Shop presents abstract locations (e.g., "A-01", "B-05") with escalating science costs. Purchasing a location sends a check to the server — you don't know what item you'll send until you buy it. The shop is gated by 5 tiers that unlock as you receive key progression items (Gear Workshop, Scavenger Flag, Smelter, etc.). A blueprint is only placed in a shop slot of its own tier or higher, so a Smelter never sits in a tier 1 slot. A blueprint that a slot needs before it opens, such as the Smelter for tier 3, may sit one tier lower, and blueprints forced into the first sphere may sit in tier 1. A locked path shows what it still needs, such as the previous check, missing blueprints or more science, without revealing the item.
 
 Buildings that use Explosives or Extract (Dynamite, Tunnel, Detonator, banners, Memory, Agora, Detailer and others) also need a badwater source in logic: Badwater Pump for Folktails, Deep Badwater Pump and Metalsmith for Iron Teeth.
 

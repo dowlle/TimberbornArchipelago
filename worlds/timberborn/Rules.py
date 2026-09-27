@@ -78,9 +78,14 @@ def can_produce_extract(state: CollectionState, player: int, faction: str = "Fol
     """Centrifuge converts Badwater → Extract (Refinery makes Biofuel and Catalyst)."""
     return resource_chain_met("Extract", 1, state, player, faction)
 
+BOT_BLUEPRINTS: dict[str, tuple[str, ...]] = {
+    "Folktails": ("Bot Part Factory", "Bot Assembler"),
+    "IronTeeth": ("Bot Part Factory", "Bot Assembler"),
+}
+
+
 def can_build_bots(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
-    return (has(state, player, "Bot Part Factory")
-            and has(state, player, "Bot Assembler")
+    return (has_all(state, player, *BOT_BLUEPRINTS[faction])
             and can_produce_metal(state, player, faction)
             and can_produce_gears(state, player))
 
@@ -175,6 +180,9 @@ def set_rules(world: "TimberbornWorld") -> None:
     _set_branching_rules(world, player, mw, faction)
     _set_building_prerequisite_rules(world, player, mw, faction)
     _set_completion_condition(world, player, mw, faction)
+    world.placement_tiers = placement_tiers(
+        faction, world._progressive_chains, world.shop_layout,
+        set(mw.early_items[player]) | set(mw.local_early_items[player]))
     _set_tier_placement_rules(world, player, mw)
 
 
@@ -182,22 +190,72 @@ def set_rules(world: "TimberbornWorld") -> None:
 # Tier-gated placement (#13)
 #
 # A Timberborn blueprint may only be placed in a Timberborn shop slot whose
-# tier is at least the blueprint's own construction tier, so a Smelter (tier 3)
-# never sits in a tier 1 slot that is reachable before metal. This is an item
-# rule, not an access rule: it limits where fill puts items and never changes
-# what a location needs. A progressive item counts as its first step. Items
-# without a tier (packages, traps, boosts, scouts, skips), other games' items
-# and Timberborn blueprints in other games' locations are unrestricted.
-# Starting items are precollected, never placed, so the rule does not see them.
+# tier is at least the blueprint's own tier, so a Smelter never sits in a
+# tier 1 slot that is reachable long before metal. This is an item rule, not
+# an access rule: it limits where fill puts items and never changes what a
+# location needs. A progressive item counts as its first step. Items without a
+# tier (packages, traps, boosts, scouts, skips), other games' items and
+# Timberborn blueprints in other games' locations or in milestones are
+# unrestricted. Starting items are precollected, never placed.
+#
+# The allowed slot tier comes from what the item is needed for, not only from
+# its construction materials. Two cases lower it:
+# - A blueprint that a shop slot of tier N requires (the tier keys such as the
+#   Smelter for tier 3, and the prerequisites of the building shown in that
+#   slot) may sit one tier lower, in N - 1. Otherwise it could never be in its
+#   own shop, and a seed with few milestones has nowhere to put it.
+# - A blueprint forced into sphere 1 (Force Early Items) may sit in tier 1,
+#   because the tier 1 slots are sphere 1.
 # ---------------------------------------------------------------------------
 
-def placement_tiers(faction: str, progressive_chains: dict[str, tuple[str, ...]] | None) -> dict[str, int]:
+def tier_blueprints(tier: int, faction: str = "Folktails") -> tuple[str, ...]:
+    """Blueprints that _tier_predicate(tier) requires."""
+    required: list[str] = []
+    if tier >= 2:
+        required += ["Gear Workshop", "Forester"]
+    if tier >= 3:
+        required += ["Smelter"] + (["Scavenger Flag"] if faction == "Folktails" else [])
+    if tier >= 4:
+        required += ["Tapper's Shack", "Wood Workshop"]
+    if tier >= 5:
+        required += list(BOT_BLUEPRINTS[faction])
+    return tuple(dict.fromkeys(required))
+
+
+def slot_required_blueprints(entry: dict, faction: str) -> tuple[str, ...]:
+    """Blueprints a shop slot's access rule requires (slot tier and its building)."""
+    building = entry["building_name"]
+    required = (list(tier_blueprints(entry["tier"], faction))
+                + list(tier_blueprints(get_building_tier(building, faction), faction))
+                + list(building_prerequisite_blueprints(building, faction)))
+    return tuple(dict.fromkeys(required))
+
+
+def placement_tiers(faction: str, progressive_chains: dict[str, tuple[str, ...]] | None,
+                    shop_layout: list[dict] | None = None,
+                    early_items: set[str] | frozenset[str] = frozenset()) -> dict[str, int]:
     """Placement tier of every blueprint item of a faction, progressive items included."""
     from .Items import get_building_names
+    item_of = {name: f"Blueprint: {name}" for name in get_building_names(faction)}
+    for prog_name, chain in (progressive_chains or {}).items():
+        for building in chain:
+            item_of[building] = prog_name
     tiers = {f"Blueprint: {name}": get_building_tier(name, faction)
              for name in get_building_names(faction)}
     for prog_name, chain in (progressive_chains or {}).items():
         tiers[prog_name] = get_building_tier(chain[0], faction)
+        for building in chain:
+            tiers.pop(f"Blueprint: {building}", None)
+    # Needed to open a slot of tier N: allowed from tier N - 1.
+    for entry in shop_layout or ():
+        for building in slot_required_blueprints(entry, faction):
+            name = item_of.get(building)
+            if name in tiers:
+                tiers[name] = max(1, min(tiers[name], entry["tier"] - 1))
+    # Forced into sphere 1: allowed in tier 1.
+    for name in early_items:
+        if name in tiers:
+            tiers[name] = 1
     return tiers
 
 
@@ -209,12 +267,66 @@ def item_placement_tier(item, multiworld) -> int:
     return tiers.get(item.name, 0)
 
 
+class ShopCapacity:
+    """Keeps enough high-tier shop slots free for the blueprints that need them.
+
+    Slot tiers are nested: a blueprint of tier t fits every slot of tier t or
+    higher. Fill may put a lower-tier or untiered item into a high slot only
+    while, for every tier t the slot covers above the item's own tier, the
+    free slots of tier t or higher (after this placement) still number at
+    least the unplaced blueprints that need tier t or higher. That is Hall's
+    condition for nested sets, so the remaining blueprints can always be
+    placed. It counts every unplaced blueprint as needing this shop, which is
+    safe: a blueprint placed elsewhere only frees room.
+    """
+
+    def __init__(self, world, slots_by_tier: dict[int, list]):
+        self.world = world
+        self.slots_by_tier = slots_by_tier
+        self._restricted: list[tuple[object, int]] | None = None
+
+    def restricted_items(self) -> list[tuple[object, int]]:
+        if self._restricted is None:
+            tiers = self.world.placement_tiers or {}
+            self._restricted = [
+                (item, tiers[item.name]) for item in self.world.multiworld.itempool
+                if item.player == self.world.player and item.game == "Timberborn"
+                and tiers.get(item.name, 0) > 1
+            ]
+        return self._restricted
+
+    def allows(self, item, slot_tier: int) -> bool:
+        item_tier = item_placement_tier(item, self.world.multiworld)
+        if item_tier > slot_tier:
+            return False
+        if item_tier == slot_tier or slot_tier <= 1:
+            return True
+        free = [0] * 7
+        for tier, slots in self.slots_by_tier.items():
+            free[tier] = sum(1 for slot in slots if slot.item is None)
+        need = [0] * 7
+        for placed, tier in self.restricted_items():
+            if placed.location is None:
+                need[tier] += 1
+        free_at_least = need_at_least = 0
+        for tier in range(5, max(item_tier, 1), -1):
+            free_at_least += free[tier]
+            need_at_least += need[tier]
+            if tier <= slot_tier and free_at_least - 1 < need_at_least:
+                return False
+        return True
+
+
 def _set_tier_placement_rules(world, player, mw) -> None:
+    slots_by_tier: dict[int, list] = {tier: [] for tier in range(1, 6)}
+    for entry in world.shop_layout:
+        slots_by_tier[entry["tier"]].append(mw.get_location(entry["location_name"], player))
+    world.shop_capacity = capacity = ShopCapacity(world, slots_by_tier)
     for entry in world.shop_layout:
         loc = mw.get_location(entry["location_name"], player)
         original = loc.item_rule
-        loc.item_rule = lambda item, t=entry["tier"], orig=original, m=mw: (
-            item_placement_tier(item, m) <= t and orig(item)
+        loc.item_rule = lambda item, t=entry["tier"], orig=original, c=capacity: (
+            c.allows(item, t) and orig(item)
         )
 
 
