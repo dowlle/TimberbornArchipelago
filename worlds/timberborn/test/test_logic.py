@@ -60,6 +60,7 @@ class TestBranchingCompletionReachable(TimberbornTestBase):
 
 class TestTier2RequiresForester(TimberbornTestBase):
     """Forester is needed for sustainable wood → gear production → tier 2."""
+    options = {"starting_blueprints": 0}  # otherwise Forester is a starting item
 
     def test_not_beatable_without_forester(self):
         self.collect_all_but("Blueprint: Forester")
@@ -290,6 +291,7 @@ class TestMilestoneTierGating(TimberbornTestBase):
 class TestStrictModeSurvivalRequirements(TimberbornTestBase):
     """Strict mode adds building requirements for survival milestones."""
     options = {
+        "starting_blueprints": 0,  # Stairs would be a starting item
         "logic_difficulty": 1,  # strict
         "include_survival_milestones": 1,
     }

@@ -23,6 +23,22 @@ if TYPE_CHECKING:
     from . import TimberbornWorld
 
 from .BuildingTiers import get_building_tier
+from .Rules import building_prerequisite_blueprints
+
+# Buildings with prerequisites beyond their construction materials (Explosives
+# or Extract consumers, which need the badwater and metal chains; Iron Teeth
+# Dance Pit) are dealt no lower than this tier. Otherwise a tier 1 building
+# such as Agora could take a first slot of a path and leave that path closed
+# at the start.
+PREREQUISITE_MIN_TIER = 3
+
+
+def layout_tier(name: str, faction: str) -> int:
+    """Tier group a building is dealt into when building the shop layout."""
+    tier = get_building_tier(name, faction)
+    if building_prerequisite_blueprints(name, faction):
+        tier = max(tier, PREREQUISITE_MIN_TIER)
+    return tier
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -60,8 +76,7 @@ def generate_shop_layout(
     # 1. Group buildings by their actual construction-material tier
     tier_groups: dict[int, list[str]] = {t: [] for t in range(1, 6)}
     for name in building_names:
-        tier = get_building_tier(name, faction)
-        tier_groups[tier].append(name)
+        tier_groups[layout_tier(name, faction)].append(name)
 
     # 2. Shuffle each tier group independently
     for tier in tier_groups:
@@ -70,7 +85,7 @@ def generate_shop_layout(
     # 3. Pin priority buildings to front of their tier group
     PRIORITY_BUILDINGS = ["Forester"]
     for bld in reversed(PRIORITY_BUILDINGS):
-        tier = get_building_tier(bld, faction)
+        tier = layout_tier(bld, faction)
         if bld in tier_groups[tier]:
             tier_groups[tier].remove(bld)
             tier_groups[tier].insert(0, bld)

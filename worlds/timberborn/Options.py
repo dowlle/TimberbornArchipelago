@@ -279,6 +279,8 @@ class ForceEarlyItems(Toggle):
     """
     When enabled, essential early-game blueprints (Forester, Stairs, Levee, Gear Workshop)
     are forced into the first reachable sphere, guaranteeing they are available right away.
+    With Starting Blueprints on, Forester and Stairs are starting items instead, so only
+    Levee and Gear Workshop are forced.
     Platform and Floodgate are progression items and will also appear early, but are not
     forced into sphere 1 to avoid fill errors when milestones are disabled.
 
@@ -287,6 +289,21 @@ class ForceEarlyItems(Toggle):
     less predictable, but allows for more varied and challenging seeds.
     """
     display_name = "Force Early Items"
+    default = 1
+
+
+class StartingBlueprints(Toggle):
+    """
+    When enabled, you start with the Forester, Stairs and Platform blueprints
+    (with Progressive Platforms active, you start with its first step, the Platform).
+    They are unlocked as soon as you connect, so sustainable wood and basic vertical
+    building never wait on another player. These blueprints are taken out of the
+    item pool; their slots receive resource packages instead.
+
+    Force Early Items still puts Levee and Gear Workshop in sphere 1. With this
+    option off, Forester and Stairs are forced into sphere 1 instead.
+    """
+    display_name = "Starting Blueprints"
     default = 1
 
 
@@ -348,5 +365,6 @@ class TimberbornOptions(PerGameCommonOptions):
     resource_milestone_set: ResourceMilestoneSet
     resource_package_size: ResourcePackageSize
     force_early_items: ForceEarlyItems
+    starting_blueprints: StartingBlueprints
     extra_early_survival: ExtraEarlySurvival
     logic_difficulty: LogicDifficulty

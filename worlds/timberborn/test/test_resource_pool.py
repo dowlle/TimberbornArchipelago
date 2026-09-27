@@ -139,8 +139,9 @@ class ResourcePoolChecks:
         self.assertTrue(packages)
         self.assertTrue(set(packages) <= set(weights))
         # Traps, boosts, scouts and skips are unchanged: every milestone
-        # beyond the 23 fixed extras carries a package.
-        self.assertEqual(len(packages), 61 + 18 - 23)
+        # beyond the 23 fixed extras carries a package, plus one package for
+        # each of the three starting blueprints taken out of the pool.
+        self.assertEqual(len(packages), 61 + 18 - 23 + 3)
 
     def test_slot_data_packages_and_milestones(self):
         slot_data = self.world.fill_slot_data()
@@ -160,7 +161,9 @@ class ResourcePoolChecks:
         milestones = [n for n in self.world.active_milestones if n.startswith("Resource:")]
         chains = {n: resource_chain_blueprints(*parse_resource_milestone(n), self.faction)
                   for n in milestones}
-        for blueprint in sorted({b for req in chains.values() for b in req}):
+        starting = {item.name for item in self.multiworld.precollected_items[self.player]}
+        for blueprint in sorted({b for req in chains.values() for b in req}
+                                - {s.removeprefix("Blueprint: ") for s in starting}):
             state = CollectionState(self.multiworld)
             for item in self.multiworld.itempool:
                 if item.name != f"Blueprint: {blueprint}":
@@ -169,6 +172,7 @@ class ResourcePoolChecks:
                 with self.subTest(blueprint=blueprint, milestone=name):
                     reachable = self.multiworld.get_location(name, self.player).can_reach(state)
                     self.assertEqual(reachable, blueprint not in required)
+        self.assertIn("Blueprint: Forester", starting)
 
     def test_free_chains_reachable_with_nothing(self):
         state = CollectionState(self.multiworld)

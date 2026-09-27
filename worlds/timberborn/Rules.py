@@ -66,13 +66,17 @@ def can_produce_treated_planks(state: CollectionState, player: int) -> bool:
             and has(state, player, "Wood Workshop")
             and can_produce_gears(state, player))
 
+def can_gather_badwater(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
+    """A badwater source: Badwater Pump (Folktails) or Deep Badwater Pump via Metalsmith (Iron Teeth)."""
+    return resource_chain_met("Badwater", 1, state, player, faction)
+
 def can_produce_explosives(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
     """Explosives Factory converts Badwater → Explosives."""
-    return has(state, player, "Explosives Factory") and can_produce_metal(state, player, faction)
+    return resource_chain_met("Explosives", 1, state, player, faction)
 
 def can_produce_extract(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
     """Centrifuge converts Badwater → Extract (Refinery makes Biofuel and Catalyst)."""
-    return resource_chain_met("Extract", 10, state, player, faction)
+    return resource_chain_met("Extract", 1, state, player, faction)
 
 def can_build_bots(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
     return (has(state, player, "Bot Part Factory")
@@ -128,11 +132,41 @@ def _tier_predicate(tier: int, state: CollectionState, player: int,
 # ---------------------------------------------------------------------------
 
 
+# Buildings that consume Explosives or Extract, from the 1.1 blueprints: as
+# construction material (BuildingCost), as a recipe ingredient the building
+# cannot work without, or as a consumed good or nutrient. Refinery (Catalyst)
+# and Efficient Mine (efficient scrap recipe) also have recipes without
+# Extract, so they stay usable without it and are not listed.
+EXPLOSIVES_CONSUMERS: frozenset[str] = frozenset({
+    "Dynamite", "Double Dynamite", "Triple Dynamite", "Tunnel", "Detonator",
+})
+EXTRACT_CONSUMERS: frozenset[str] = frozenset({
+    "Double Dynamite", "Triple Dynamite", "Tunnel", "Detonator", "Memory",
+    "Pole Banner", "Square Banner", "Agora", "Detailer",
+    "Decontamination Pod", "Advanced Breeding Pod", "Grease Factory",
+})
+
+
+def building_prerequisite_blueprints(building: str, faction: str = "Folktails") -> tuple[str, ...]:
+    """Blueprints a building needs beyond the shop's material-tier policy.
+
+    Explosives and Extract consumers need the good's whole production chain,
+    badwater source included. Iron Teeth Dance Pit costs Metal Parts.
+    """
+    required: list[str] = []
+    if building in EXPLOSIVES_CONSUMERS:
+        required += resource_chain_blueprints("Explosives", 1, faction)
+    if building in EXTRACT_CONSUMERS:
+        required += resource_chain_blueprints("Extract", 1, faction)
+    if building == "Dance Pit" and faction == "IronTeeth":
+        required.append("Metalsmith")
+    return tuple(dict.fromkeys(required))
+
+
 def has_building_prerequisites(building: str, state: CollectionState, player: int,
                                faction: str = "Folktails") -> bool:
     """Requirements beyond the shop's conservative material-tier policy."""
-    return (building != "Dance Pit" or faction != "IronTeeth"
-            or has(state, player, "Metalsmith"))
+    return has_all(state, player, *building_prerequisite_blueprints(building, faction))
 
 def set_rules(world: "TimberbornWorld") -> None:
     player = world.player
@@ -227,18 +261,19 @@ def _set_building_prerequisite_rules(world, player, mw, faction: str) -> None:
         loc_name = entry["location_name"]
         building = entry["building_name"]
         building_tier = get_building_tier(building, faction)
+        prerequisites = building_prerequisite_blueprints(building, faction)
 
-        # T1 buildings have no extra prerequisites
-        if building_tier <= 1:
+        # T1 buildings without extra prerequisites need nothing more
+        if building_tier <= 1 and not prerequisites:
             continue
 
         loc = mw.get_location(loc_name, player)
         original_rule = loc.access_rule
 
         # Combined rule: original (sequential + slot tier) AND building prereqs
-        loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, b=building, orig=original_rule: (
+        loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, req=prerequisites, orig=original_rule: (
             orig(state) and _tier_predicate(bt, state, p, f)
-            and has_building_prerequisites(b, state, p, f)
+            and has_all(state, p, *req)
         )
 
         # Also update the event location if it exists
@@ -246,9 +281,9 @@ def _set_building_prerequisite_rules(world, player, mw, faction: str) -> None:
         if event_name in event_names:
             event_loc = mw.get_location(event_name, player)
             event_orig = event_loc.access_rule
-            event_loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, b=building, eo=event_orig: (
+            event_loc.access_rule = lambda state, p=player, bt=building_tier, f=faction, req=prerequisites, eo=event_orig: (
                 eo(state) and _tier_predicate(bt, state, p, f)
-                and has_building_prerequisites(b, state, p, f)
+                and has_all(state, p, *req)
             )
 
 
@@ -304,12 +339,22 @@ _SHARED_CHAINS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "Metal Blocks":   ((), ("metal",)),
 }
 
+# Where each faction gets Badwater as a good. Folktails pump it (Badwater Pump);
+# the Badwater Rig is a 4000-science alternative left out of logic, and the
+# Badwater Dome only caps a source. Iron Teeth need the Deep Badwater Pump,
+# which costs Metal Parts from the Metalsmith (tier 5, accepted in #2).
+BADWATER_SOURCES: dict[str, tuple[str, ...]] = {
+    "Folktails": ("Badwater Pump",),
+    "IronTeeth": ("Metalsmith", "Deep Badwater Pump"),
+}
+
 RESOURCE_CHAINS: dict[str, dict[str, tuple[tuple[str, ...], tuple[str, ...]]]] = {
     "Folktails": {
         **_SHARED_CHAINS,
         "Scrap Metal":      (("Scavenger Flag",), ()),
-        "Extract":          (("Badwater Pump", "Centrifuge"), ("metal",)),
-        "Explosives":       (("Badwater Pump", "Explosives Factory"), ("metal",)),
+        "Badwater":         (BADWATER_SOURCES["Folktails"], ("metal",)),
+        "Extract":          ((*BADWATER_SOURCES["Folktails"], "Centrifuge"), ("metal",)),
+        "Explosives":       ((*BADWATER_SOURCES["Folktails"], "Explosives Factory"), ("metal",)),
         "Bread":            (("Gristmill", "Bakery"), ("gears",)),
         "Paper":            (("Paper Mill",), ("gears",)),
         "Grilled Potatoes": ((), ()),
@@ -322,8 +367,9 @@ RESOURCE_CHAINS: dict[str, dict[str, tuple[tuple[str, ...], tuple[str, ...]]]] =
     "IronTeeth": {
         **_SHARED_CHAINS,
         "Scrap Metal":       ((), ()),
-        "Extract":           (("Metalsmith", "Deep Badwater Pump", "Centrifuge"), ("metal",)),
-        "Explosives":        (("Metalsmith", "Deep Badwater Pump", "Explosives Factory"), ("metal",)),
+        "Badwater":          (BADWATER_SOURCES["IronTeeth"], ("metal",)),
+        "Extract":           ((*BADWATER_SOURCES["IronTeeth"], "Centrifuge"), ("metal",)),
+        "Explosives":        ((*BADWATER_SOURCES["IronTeeth"], "Explosives Factory"), ("metal",)),
         "Corn Rations":      (("Food Factory",), ("metal",)),
         "Fermented Cassava": ((), ()),
         "Kohlrabi":          ((), ()),
@@ -390,6 +436,10 @@ def _set_milestone_rules(world, player, mw, faction: str) -> None:
             loc.access_rule = lambda state, p=player, req=required: has_all(state, p, *req)
             continue
 
+        if loc_name in WONDER_LOCATIONS:
+            loc.access_rule = lambda state, p=player, f=faction: can_build_wonder(state, p, f)
+            continue
+
         tier = MILESTONE_TIERS.get(loc_name, 1)
 
         if strict and loc_name in STRICT_MILESTONE_REQUIREMENTS:
@@ -402,6 +452,31 @@ def _set_milestone_rules(world, player, mw, faction: str) -> None:
             loc.access_rule = lambda state, p=player, t=tier, f=faction: (
                 _tier_predicate(t, state, p, f)
             )
+
+
+# Goods each faction's Wonder needs delivered (WonderInventorySpec in the 1.1
+# blueprints). Earth Recultivator takes 500 Extract and 500 Paper, so it also
+# needs a badwater source. Earth Repopulator takes Treated Planks and Berries,
+# which tier 5 already covers.
+WONDER_GOODS: dict[str, tuple[tuple[str, int], ...]] = {
+    "Folktails": (("Extract", 500), ("Paper", 500)),
+    "IronTeeth": (("Treated Planks", 500), ("Berries", 500)),
+}
+WONDER_LOCATIONS: frozenset[str] = frozenset({
+    "Wonder: Complete Earth Recultivator", "Wonder: Complete Earth Repopulator",
+})
+
+
+def wonder_blueprints(faction: str) -> tuple[str, ...]:
+    """Blueprints for the production chains of the Wonder's required goods."""
+    required: list[str] = []
+    for good, amount in WONDER_GOODS[faction]:
+        required += resource_chain_blueprints(good, amount, faction)
+    return tuple(dict.fromkeys(required))
+
+
+def can_build_wonder(state: CollectionState, player: int, faction: str = "Folktails") -> bool:
+    return _tier5(state, player, faction) and has_all(state, player, *wonder_blueprints(faction))
 
 
 # Strict-mode building requirements for survival milestones.
@@ -495,7 +570,7 @@ def _set_completion_condition(world, player, mw, faction: str) -> None:
 
     if "Wonder" in goals:
         goal_checks.append(
-            lambda state, p=player, f=faction: _tier5(state, p, f)
+            lambda state, p=player, f=faction: can_build_wonder(state, p, f)
         )
 
     client_goals = goals - {"Wonder"}

@@ -135,6 +135,11 @@ class TimberbornWorld(World):
     resolved_goals: set[str] | None = None
     _progressive_chains: dict[str, tuple[str, ...]] | None = None
     _water_packages: int = 0
+    starting_items: list[str] | None = None
+
+    # Starting blueprints (option starting_blueprints). The platform is the
+    # smallest one both factions share: Platform, 1x1x1, 6 planks, 100 science.
+    STARTING_BLUEPRINTS: tuple[str, ...] = ("Forester", "Stairs", "Platform")
 
     def create_regions(self) -> None:
         from .ShopLayout import generate_shop_layout
@@ -247,14 +252,24 @@ class TimberbornWorld(World):
 
         # --- Blueprint items (faction-specific, with progressive swaps) ---
         blueprint_items = get_blueprint_items(self.faction, self._progressive_chains)
+
+        # Starting blueprints leave the pool and go to the start inventory.
+        self.starting_items = []
+        if self.options.starting_blueprints:
+            for item_name in self._starting_item_names():
+                blueprint_items.remove(item_name)
+                self.multiworld.push_precollected(self.create_item(item_name))
+                self.starting_items.append(item_name)
+
         for item_name in blueprint_items:
             self.multiworld.itempool.append(self.create_item(item_name))
             items_created += 1
 
         # Essential buildings must be available from sphere 1 (if option enabled)
         if self.options.force_early_items:
-            self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
-            self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
+            if not self.options.starting_blueprints:
+                self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
+                self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
             self.multiworld.early_items[self.player]["Blueprint: Levee"] = 1
             self.multiworld.early_items[self.player]["Blueprint: Gear Workshop"] = 1
 
@@ -311,6 +326,19 @@ class TimberbornWorld(World):
         filler_needed = unfilled - items_created
         for _ in range(max(0, filler_needed)):
             self.multiworld.itempool.append(self.create_item(self._draw_resource_package()))
+
+    def _starting_item_names(self) -> list[str]:
+        """Item names of the starting blueprints; a chain member gives its first step."""
+        names = []
+        for building in self.STARTING_BLUEPRINTS:
+            progressive = next((prog for prog, chain in (self._progressive_chains or {}).items()
+                                if building in chain), None)
+            if progressive is not None:
+                assert self._progressive_chains[progressive][0] == building, building
+                names.append(progressive)
+            else:
+                names.append(f"Blueprint: {building}")
+        return names
 
     # -----------------------------------------------------------------
     # Resource packages — weighted random draw per faction
@@ -447,6 +475,8 @@ class TimberbornWorld(World):
             "water_storage_goal": self.options.water_storage_goal.value,
             "drought_difficulty": self.options.drought_difficulty.value,
             "faction": self.faction,
+            # Precollected blueprints; the server also sends them as items.
+            "starting_items": list(self.starting_items or []),
             "science_cost_multiplier": self.options.science_cost_multiplier.value,
             "skip_count": self.options.skip_count.value,
             "resource_milestone_set": self.options.resource_milestone_set.value,

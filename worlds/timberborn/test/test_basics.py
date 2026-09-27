@@ -30,8 +30,10 @@ class TestDefaultGeneration(TimberbornTestBase):
                          f"Item pool ({item_count}) != locations ({location_count})")
 
     def test_all_blueprint_items_in_pool(self):
-        """Every blueprint should be in the pool directly or via a progressive item."""
+        """Every blueprint should be in the pool or the start inventory, directly or
+        via a progressive item."""
         pool_names = {item.name for item in self.multiworld.itempool}
+        pool_names |= {item.name for item in self.multiworld.precollected_items[self.player]}
         building_to_prog = get_building_to_progressive(
             self.world.faction, bool(self.world._progressive_chains))
         for bp_name in BLUEPRINT_ITEMS:
@@ -321,7 +323,9 @@ class TestITDefaultGeneration(TimberbornITTestBase):
 
     def test_shared_items_in_pool(self):
         pool_names = {item.name for item in self.multiworld.itempool}
-        self.assertIn("Blueprint: Forester", pool_names)
+        self.assertNotIn("Blueprint: Forester", pool_names)  # starting item
+        self.assertIn("Blueprint: Forester",
+                      {item.name for item in self.multiworld.precollected_items[self.player]})
         self.assertIn("Blueprint: Gear Workshop", pool_names)
         self.assertIn("Blueprint: Smelter", pool_names)
 
@@ -370,7 +374,8 @@ class TestProgressiveItemsOn(TimberbornTestBase):
 
     def test_progressive_item_counts(self):
         pool_names = [item.name for item in self.multiworld.itempool]
-        self.assertEqual(pool_names.count("Progressive Platforms"), 3)
+        # The first Progressive Platforms is a starting item (starting_blueprints).
+        self.assertEqual(pool_names.count("Progressive Platforms"), 2)
         self.assertEqual(pool_names.count("Progressive Flood Control"), 3)
         self.assertEqual(pool_names.count("Progressive Bridges"), 6)
         self.assertEqual(pool_names.count("Progressive Overhangs"), 5)
@@ -401,7 +406,7 @@ class TestProgressiveItemsOn(TimberbornTestBase):
 
 class TestProgressiveItemsOff(TimberbornTestBase):
     """progressive_items=off should use classic individual items."""
-    options = {"progressive_items": 0}
+    options = {"progressive_items": 0, "starting_blueprints": 0}
 
     def test_no_progressive_items_in_pool(self):
         pool_names = {item.name for item in self.multiworld.itempool}

@@ -19,7 +19,7 @@ The goal is configurable:
 
 ## Which items can be in another player's world?
 
-- **Blueprints** — 126 individual building unlocks (e.g., *Forester*, *Gear Workshop*, *Smelter*).
+- **Blueprints** — 126 individual building unlocks (e.g., *Forester*, *Gear Workshop*, *Smelter*). With Starting Blueprints on (default), Forester, Stairs and Platform are in your starting inventory instead and unlock as soon as you connect.
 - **Passive Boosts** — faster movement, increased carrying capacity, faster working speed, faster tree growth, longer life expectancy.
 - **Skip** — lets you check a shop location for free (bypasses science cost).
 - **Resource packages** — goods for your faction, such as *Package: Logs* (100 Logs) or *Package: Bread* (60 Bread). The Resource Package Size option scales every amount (10% to 1000%).
@@ -27,7 +27,9 @@ The goal is configurable:
 
 ## What does another player's item look like in my game?
 
-The AP Shop presents abstract locations (e.g., "A-01", "B-05") with escalating science costs. Purchasing a location sends a check to the server — you don't know what item you'll send until you buy it. The shop is gated by 5 tiers that unlock as you receive key progression items (Gear Workshop, Scavenger Flag, Smelter, etc.).
+The AP Shop presents abstract locations (e.g., "A-01", "B-05") with escalating science costs. Purchasing a location sends a check to the server — you don't know what item you'll send until you buy it. The shop is gated by 5 tiers that unlock as you receive key progression items (Gear Workshop, Scavenger Flag, Smelter, etc.). A locked path shows what it still needs, such as the previous check, missing blueprints or more science, without revealing the item.
+
+Buildings that use Explosives or Extract (Dynamite, Tunnel, Detonator, banners, Memory, Agora, Detailer and others) also need a badwater source in logic: Badwater Pump for Folktails, Deep Badwater Pump and Metalsmith for Iron Teeth.
 
 ## Milestone locations
 
