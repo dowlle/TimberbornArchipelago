@@ -165,9 +165,55 @@ class DroughtDifficulty(Range):
 
 
 class IncludeTraps(Toggle):
-    """If enabled, trap items (Hazardous Weather, Hungry Beavers, Thirsty Beavers) can appear in the item pool."""
+    """If enabled, trap items (Hazardous Weather, Hungry Beavers, Thirsty Beavers) can appear in the item pool.
+    This is the master switch for traps. Trap Percentage sets how many traps there are, and the
+    trap weight options set how often each trap type appears."""
     display_name = "Include Traps"
     default = 1
+
+
+class TrapPercentage(Range):
+    """Percentage of the filler slots that become traps. Filler slots are the item slots
+    left after blueprints, boosts, scouts and skips; the ones that do not become traps
+    get resource packages. The trap count is rounded half up: the default 15 gives
+    10 traps from the 69 filler slots of a default seed. 0 means no traps.
+    Include Traps must be on for any trap to appear, and the trap weights set the mix."""
+    display_name = "Trap Percentage"
+    range_start = 0
+    range_end = 100
+    default = 15
+
+
+class _TrapWeight(Range):
+    range_start = 0
+    range_end = 100
+
+
+class HazardousWeatherTrapWeight(_TrapWeight):
+    """How often Hazardous Weather traps appear, relative to the other trap weights.
+    Each trap in the pool is drawn with a chance of this weight divided by the sum of
+    all three trap weights. 0 removes this trap. If all three weights are 0, there are
+    no traps at all. Include Traps must be on for any trap to appear."""
+    display_name = "Hazardous Weather Trap Weight"
+    default = 50
+
+
+class HungryBeaversTrapWeight(_TrapWeight):
+    """How often Hungry Beavers traps appear, relative to the other trap weights.
+    Each trap in the pool is drawn with a chance of this weight divided by the sum of
+    all three trap weights. 0 removes this trap. If all three weights are 0, there are
+    no traps at all. Include Traps must be on for any trap to appear."""
+    display_name = "Hungry Beavers Trap Weight"
+    default = 30
+
+
+class ThirstyBeaversTrapWeight(_TrapWeight):
+    """How often Thirsty Beavers traps appear, relative to the other trap weights.
+    Each trap in the pool is drawn with a chance of this weight divided by the sum of
+    all three trap weights. 0 removes this trap. If all three weights are 0, there are
+    no traps at all. Include Traps must be on for any trap to appear."""
+    display_name = "Thirsty Beavers Trap Weight"
+    default = 20
 
 
 class TrapMode(Choice):
@@ -382,6 +428,10 @@ class TimberbornOptions(PerGameCommonOptions):
     water_storage_goal: WaterStorageGoal
     drought_difficulty: DroughtDifficulty
     include_traps: IncludeTraps
+    trap_percentage: TrapPercentage
+    hazardous_weather_trap_weight: HazardousWeatherTrapWeight
+    hungry_beavers_trap_weight: HungryBeaversTrapWeight
+    thirsty_beavers_trap_weight: ThirstyBeaversTrapWeight
     trap_mode: TrapMode
     max_science_cost: MaxScienceCost
     science_cost_multiplier: ScienceCostMultiplier

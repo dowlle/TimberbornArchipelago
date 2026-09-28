@@ -41,7 +41,7 @@ The survival milestones use it as 1st = early, 5 = mid, 10 = late. The Droughts 
 - **Passive Boosts** — faster movement, increased carrying capacity, faster working speed, faster tree growth, longer life expectancy.
 - **Skip** — lets you check a shop location for free (bypasses science cost).
 - **Resource packages** — goods for your faction, such as *Package: Logs* (100 Logs) or *Package: Bread* (60 Bread). The Resource Package Size option scales every amount (10% to 1000%).
-- **Traps** *(optional)* — negative effects like *Hazardous Weather* (triggers an early drought or badtide) or *Hungry Beavers*.
+- **Traps** *(optional)* — negative effects like *Hazardous Weather* (triggers an early drought or badtide) or *Hungry Beavers*. Include Traps turns them on or off. Trap Percentage (0 to 100, default 15) sets how many of the filler slots, the slots left after blueprints, boosts, scouts and skips, become traps instead of resource packages. The count is rounded half up; a default seed has 69 filler slots, so 15% gives 10 traps. Three weights (0 to 100) set how often each trap type appears: Hazardous Weather 50, Hungry Beavers 30 and Thirsty Beavers 20 by default. Each trap is drawn with a chance of its weight divided by the sum of the weights. A weight of 0 removes that trap type, and with all three at 0 there are no traps.
 
 ## What does another player's item look like in my game?
 

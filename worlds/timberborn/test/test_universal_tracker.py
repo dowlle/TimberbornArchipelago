@@ -17,6 +17,10 @@ CASES = [
      "include_population_milestones": 0, "max_science_cost": 9000},
     {"faction": 1, "progressive_items": 0, "randomization_style": 1, "goal_selection": ["Wonder"],
      "include_wellbeing_milestones": 0},
+    {"faction": 0, "hazardous_weather_trap_weight": 0, "hungry_beavers_trap_weight": 90},
+    {"faction": 1, "hazardous_weather_trap_weight": 0, "hungry_beavers_trap_weight": 0,
+     "thirsty_beavers_trap_weight": 0},
+    {"faction": 1, "trap_percentage": 100, "thirsty_beavers_trap_weight": 0},
 ]
 
 
