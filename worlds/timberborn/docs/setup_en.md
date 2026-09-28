@@ -57,7 +57,6 @@ Timberborn:
   bots_goal: 10                     # target for Bots goal
   water_storage_goal: 5000          # target for Water Storage goal
   randomization_style: shuffle      # shuffle | grand_chaos
-  drought_difficulty: 3             # 1 (easy) to 5 (brutal)
   include_traps: true
   max_science_cost: 5000            # max price for the most expensive shop location (1000-20000)
   skip_count: 3                     # number of Skip items in the pool (0-10)

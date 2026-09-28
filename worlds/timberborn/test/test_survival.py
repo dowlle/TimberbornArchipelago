@@ -45,9 +45,9 @@ class TestSurvivalTables(TimberbornTestBase):
         self.assertNotIn("Refinery", tier_blueprints(5, "IronTeeth"))
 
 
-class TestSurvivalMilestonesStandard(TimberbornTestBase):
-    """Survival predicates apply in standard logic too; floodgates are essential for badtides."""
-    options = {"faction": 0, "logic_difficulty": 0, "progressive_items": 0,
+class TestSurvivalMilestones(TimberbornTestBase):
+    """Survival predicates gate survival milestones; floodgates are essential for badtides."""
+    options = {"faction": 0, "progressive_items": 0,
                "include_survival_milestones": 1}
 
     def test_first_badtide_needs_floodgate_and_medium_tank(self):
@@ -159,3 +159,19 @@ class TestRemovedDroughtDifficultyStillGenerates(TimberbornTestBase):
         self.assertNotIn("drought_difficulty", data)
         self.assertEqual(data["drought_cycles_goal"], 40)
         self.assertEqual(data["badtide_cycles_goal"], 20)
+
+
+class TestRemovedLogicDifficultyStandardStillGenerates(TimberbornTestBase):
+    """Old YAMLs set logic_difficulty: standard."""
+    options = {"logic_difficulty": "standard"}
+
+    def test_old_value_generates(self):
+        self.assertNotIn("logic_difficulty", self.world.fill_slot_data())
+
+
+class TestRemovedLogicDifficultyStrictStillGenerates(TimberbornTestBase):
+    """Old YAMLs set logic_difficulty: strict."""
+    options = {"logic_difficulty": "strict"}
+
+    def test_old_value_generates(self):
+        self.assertNotIn("logic_difficulty", self.world.fill_slot_data())

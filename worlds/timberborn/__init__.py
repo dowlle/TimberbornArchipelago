@@ -136,7 +136,7 @@ class TimberbornWorld(World):
     _UT_OPTION_KEYS: tuple[str, ...] = (
         "goal_requirement", "population_goal", "population_mode", "drought_cycles_goal",
         "badtide_cycles_goal", "wellbeing_goal", "bots_goal", "water_storage_goal",
-        "logic_difficulty", "randomization_style",
+        "randomization_style",
     )
 
     item_name_to_id = item_name_to_id
@@ -178,7 +178,8 @@ class TimberbornWorld(World):
     def _ut_restore_options(self, passthrough: dict) -> None:
         """Restore the options the rules read from the connected seed's slot_data, so the
         re-generation reasons about that seed and not the tracking player's YAML. Keys a
-        seed does not carry (older slot_data) keep the tracker's own values."""
+        seed does not carry (older slot_data) keep the tracker's own values; keys the
+        rules no longer read (logic_difficulty in older slot_data) are ignored."""
         options = self.options
         if "faction" in passthrough:
             options.faction.value = 1 if passthrough["faction"] == "IronTeeth" else 0
@@ -605,7 +606,6 @@ class TimberbornWorld(World):
             # district_center (seeds generated before this option).
             "goods_delivery": self.options.goods_delivery.value,
             # Universal Tracker reconstruction (see generate_early).
-            "logic_difficulty": self.options.logic_difficulty.value,
             "ut_version": self.UT_SLOT_DATA_VERSION,
             # Final delivered amount and GoodId per package item this faction
             # can receive, so the client never derives amounts from item names.

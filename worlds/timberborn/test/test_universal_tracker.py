@@ -11,7 +11,7 @@ from .. import TimberbornWorld
 CASES = [
     {"faction": 0},
     {"faction": 1, "progressive_items": 1, "goal_selection": ["Badtides", "Population"],
-     "badtide_cycles_goal": 12, "population_goal": 150, "logic_difficulty": 0},
+     "badtide_cycles_goal": 12, "population_goal": 150},
     {"faction": 0, "progressive_items": 1, "starting_blueprints": 0, "resource_milestone_set": 0,
      "goal_selection": ["Droughts", "Water Storage"], "drought_cycles_goal": 20,
      "include_population_milestones": 0, "max_science_cost": 9000},
@@ -72,6 +72,18 @@ class TestUniversalTrackerRegeneration(unittest.TestCase):
                                          tracked.get_location(name, 1).can_reach(state_b),
                                          f"{name} with {len(names)} items")
                     self.assertEqual(source.can_beat_game(state_a), tracked.can_beat_game(state_b))
+
+    def test_slot_data_from_before_logic_difficulty_removal(self):
+        """Seeds generated before the removal carry logic_difficulty; UT ignores it."""
+        source = setup_multiworld(TimberbornWorld, seed=2000, options={"faction": 1})
+        slot_data = dict(source.worlds[1].fill_slot_data())
+        self.assertNotIn("logic_difficulty", slot_data)
+        for old_value in (0, 1):
+            with self.subTest(logic_difficulty=old_value):
+                tracked = _regenerate({**slot_data, "logic_difficulty": old_value}, seed=88)
+                self.assertEqual({loc.name for loc in source.get_locations(1)},
+                                 {loc.name for loc in tracked.get_locations(1)})
+                self.assertEqual(tracked.worlds[1].faction, "IronTeeth")
 
     def test_interpret_slot_data_passes_slot_data_through(self):
         data = {"faction": "Folktails", "ut_version": 1}

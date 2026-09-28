@@ -289,14 +289,14 @@ class TestMilestoneTierGating(TimberbornTestBase):
 
 
 # ============================================================================
-# Strict mode logic
+# Survival milestone buildings
 # ============================================================================
 
-class TestStrictModeSurvivalRequirements(TimberbornTestBase):
-    """Strict mode adds building requirements for survival milestones."""
+class TestSurvivalMilestoneBuildings(TimberbornTestBase):
+    """Survival milestones need the water control and tanks for their hazard
+    (the buildings the removed strict logic_difficulty used to add)."""
     options = {
         "starting_blueprints": 0,  # Stairs would be a starting item
-        "logic_difficulty": 1,  # strict
         "include_survival_milestones": 1,
     }
 
@@ -306,7 +306,7 @@ class TestStrictModeSurvivalRequirements(TimberbornTestBase):
         self.collect_all_but("Blueprint: Levee")
         self.assertFalse(
             self.can_reach_location("Survival: Survive 5 Droughts"),
-            "Strict mode: Survive 5 Droughts should require Levee"
+            "Survive 5 Droughts should require Levee"
         )
 
     def test_badtide_requires_floodgate(self):
@@ -316,7 +316,7 @@ class TestStrictModeSurvivalRequirements(TimberbornTestBase):
         self.collect_all_but(["Blueprint: Floodgate", "Progressive Flood Control"])
         self.assertFalse(
             self.can_reach_location("Survival: Survive 1st Badtide"),
-            "Strict mode: Survive 1st Badtide should require Floodgate"
+            "Survive 1st Badtide should require Floodgate"
         )
 
     def test_survive_5_badtides_requires_medium_tank(self):
@@ -325,7 +325,7 @@ class TestStrictModeSurvivalRequirements(TimberbornTestBase):
         self.collect_all_but(["Blueprint: Medium Tank"])
         self.assertFalse(
             self.can_reach_location("Survival: Survive 5 Badtides"),
-            "Strict mode: Survive 5 Badtides should require Medium Tank"
+            "Survive 5 Badtides should require Medium Tank"
         )
 
 
