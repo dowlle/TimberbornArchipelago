@@ -357,20 +357,14 @@ class ExtraEarlySurvival(Toggle):
 
 
 class LogicDifficulty(Choice):
-    """
-    Controls how strict the logic is for milestone accessibility.
-    Survival requirements apply in both modes: survival milestones, the Droughts and
-    Badtides goals and the long goals (Wonder, high Population, Well-being and Water
-    Storage) need the water control, tanks and cures to live through the hazards
-    (for example Floodgate, Levee and Medium Tank for the first badtide).
-    - standard: the survival requirements above, otherwise milestones are gated by tier.
-    - strict: also keeps the older per-milestone building lists (Levee, Floodgate,
-      Medium Tank), which the survival requirements now already include.
-    """
-    display_name = "Logic Difficulty"
+    """Removed: standard and strict generated the same logic, because the survival
+    requirements already include strict's buildings. Kept hidden so older YAMLs that
+    set it still generate."""
+    display_name = "Logic Difficulty (removed)"
     option_standard = 0
     option_strict = 1
     default = 1
+    visibility = Visibility.none
 
 
 @dataclass

@@ -574,14 +574,10 @@ def resource_chain_met(good: str, threshold: int, state: CollectionState, player
 def _set_milestone_rules(world, player, mw, faction: str) -> None:
     """Gate milestones by tier so they appear in proper logic spheres.
 
-    Resource milestones are gated by their production chain instead.
-
-    In strict mode, survival milestones also require specific buildings
-    (Levee, Floodgate, Stairs, Medium Tank) that are practically needed
-    to survive droughts and badtides.
+    Resource milestones are gated by their production chain instead, the
+    Wonder by its goods chains, and survival milestones also need the survival
+    predicates for their hazard level.
     """
-    strict = world.options.logic_difficulty.value == 1
-
     for loc_name in world.active_milestones:
         loc = mw.get_location(loc_name, player)
         if loc_name.startswith("Resource:"):
@@ -595,12 +591,10 @@ def _set_milestone_rules(world, player, mw, faction: str) -> None:
             continue
 
         tier = MILESTONE_TIERS.get(loc_name, 1)
-        required = STRICT_MILESTONE_REQUIREMENTS.get(loc_name, []) if strict else []
         survival = SURVIVAL_MILESTONE_LEVELS.get(loc_name)
 
-        loc.access_rule = lambda state, p=player, t=tier, f=faction, req=tuple(required), sv=survival: (
+        loc.access_rule = lambda state, p=player, t=tier, f=faction, sv=survival: (
             _tier_predicate(t, state, p, f)
-            and all(has(state, p, bld) for bld in req)
             and (sv is None or can_survive(sv[0], sv[1], state, p, f))
         )
 
@@ -633,19 +627,6 @@ def can_build_wonder(state: CollectionState, player: int, faction: str = "Folkta
             and can_survive_long_game(state, player, faction))
 
 
-# Strict-mode building requirements for survival milestones. The survival
-# predicates below already include them and apply in both modes.
-STRICT_MILESTONE_REQUIREMENTS: dict[str, list[str]] = {
-    # Droughts — need water storage infrastructure
-    "Survival: Survive 5 Droughts":     ["Levee"],
-    "Survival: Survive 10 Droughts":    ["Levee", "Medium Tank"],
-    # Badtides — need flood control to contain contaminated water
-    "Survival: Survive 1st Badtide":    ["Levee", "Floodgate"],
-    "Survival: Survive 5 Badtides":     ["Levee", "Floodgate", "Medium Tank"],
-    "Survival: Survive 10 Badtides":    ["Levee", "Floodgate", "Medium Tank"],
-}
-
-
 # ---------------------------------------------------------------------------
 # Survival predicates (Goals and badtide survival review, 2026-09-27)
 #
@@ -654,8 +635,7 @@ STRICT_MILESTONE_REQUIREMENTS: dict[str, list[str]] = {
 # mechanical pumps and backup power. Each tier is a list of requirement
 # groups; a group is met when any one of its buildings can be built: the
 # blueprint, its material tier and its prerequisites (the Iron Teeth cure,
-# the Decontamination Pod, consumes Extract). Tiers are cumulative. They apply
-# in standard and strict logic.
+# the Decontamination Pod, consumes Extract). Tiers are cumulative.
 # ---------------------------------------------------------------------------
 SURVIVAL_EARLY, SURVIVAL_MID, SURVIVAL_LATE = 1, 2, 3
 
