@@ -389,30 +389,29 @@ class TimberbornWorld(World):
             items_created += 1
 
         # --- Dynamic skip & trap counts ---
-        # Remaining slots after blueprints + boosts + scouts are split between
-        # skips, traps, and filler.  Skips and traps are capped to fit.
+        # Remaining slots after blueprints + boosts + scouts go to skips first. Of the
+        # filler slots left after skips, trap_percentage percent become traps and the
+        # rest resource packages.
         remaining = unfilled - items_created
         skip_requested = self.options.skip_count.value
-        trap_requested = sum(c for _, _, c in TRAP_ITEMS) if self.options.include_traps else 0
-        total_requested = skip_requested + trap_requested
+        trap_weights = self._trap_weights()
+        trap_percentage = self.options.trap_percentage.value if trap_weights else 0
 
-        if total_requested > remaining:
-            # Scale both down proportionally, skips first
-            skip_actual = min(skip_requested, remaining // 2)
-            trap_actual = min(trap_requested, remaining - skip_actual)
-        else:
-            skip_actual = skip_requested
-            trap_actual = trap_requested
+        # Skips take at most half the remaining slots when traps are possible.
+        skip_cap = remaining // 2 if trap_percentage else remaining
+        skip_actual = max(0, min(skip_requested, skip_cap))
+        filler_slots = remaining - skip_actual
+        # Round half up: 15% of 69 filler slots is 10.35, so 10 traps.
+        trap_actual = (filler_slots * trap_percentage + 50) // 100
 
         for _ in range(skip_actual):
             self.multiworld.itempool.append(self.create_item("Skip"))
             items_created += 1
 
         if trap_actual > 0:
-            # Build flat trap list and trim to budget
-            trap_pool = [name for name, _, count in TRAP_ITEMS for _ in range(count)]
-            self.random.shuffle(trap_pool)
-            for name in trap_pool[:trap_actual]:
+            # Each trap slot draws its type independently, weighted by the trap weight options.
+            names, weights = zip(*trap_weights.items())
+            for name in self.random.choices(names, weights=weights, k=trap_actual):
                 self.multiworld.itempool.append(self.create_item(name))
                 items_created += 1
 
@@ -420,6 +419,19 @@ class TimberbornWorld(World):
         filler_needed = unfilled - items_created
         for _ in range(max(0, filler_needed)):
             self.multiworld.itempool.append(self.create_item(self._draw_resource_package()))
+
+    def _trap_weights(self) -> dict[str, int]:
+        """Trap item name -> weight for every trap type that can appear. Empty when
+        include_traps is off or every weight is 0, so the pool gets no traps."""
+        if not self.options.include_traps:
+            return {}
+        weights = {
+            "Trap: Hazardous Weather": self.options.hazardous_weather_trap_weight.value,
+            "Trap: Hungry Beavers": self.options.hungry_beavers_trap_weight.value,
+            "Trap: Thirsty Beavers": self.options.thirsty_beavers_trap_weight.value,
+        }
+        assert set(weights) == {name for name, _, _ in TRAP_ITEMS}
+        return {name: weight for name, weight in weights.items() if weight > 0}
 
     def _item_for_building(self, building: str) -> str:
         """Pool item that unlocks *building* first: its progressive item or its blueprint."""

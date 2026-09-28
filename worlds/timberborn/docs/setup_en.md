@@ -57,7 +57,11 @@ Timberborn:
   bots_goal: 10                     # target for Bots goal
   water_storage_goal: 5000          # target for Water Storage goal
   randomization_style: shuffle      # shuffle | grand_chaos
-  include_traps: true
+  include_traps: true               # master switch for traps
+  trap_percentage: 15               # % of filler slots that become traps (0-100)
+  hazardous_weather_trap_weight: 50 # relative weight of each trap type (0-100, 0 removes it)
+  hungry_beavers_trap_weight: 30
+  thirsty_beavers_trap_weight: 20
   max_science_cost: 5000            # max price for the most expensive shop location (1000-20000)
   skip_count: 3                     # number of Skip items in the pool (0-10)
   progressive_items: on             # off | grouped_random | on
