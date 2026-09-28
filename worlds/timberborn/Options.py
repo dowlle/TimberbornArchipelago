@@ -1,5 +1,13 @@
 from dataclasses import dataclass
-from Options import Choice, Range, Toggle, OptionSet, PerGameCommonOptions
+from Options import Choice, Range, Toggle, OptionSet, PerGameCommonOptions, Visibility
+
+
+class _ClampedRange(Range):
+    """A Range that clamps out-of-range numbers instead of failing, so YAMLs written
+    for an older, wider range still generate."""
+
+    def __init__(self, value: int):
+        super().__init__(min(max(int(value), self.range_start), self.range_end))
 
 
 class Faction(Choice):
@@ -97,20 +105,28 @@ class PopulationGoal(Range):
     default = 100
 
 
-class DroughtCyclesGoal(Range):
-    """When 'Droughts' goal is active, the number of drought cycles to survive."""
+class DroughtCyclesGoal(_ClampedRange):
+    """When 'Droughts' goal is active, the number of droughts to survive.
+    A drought counts when it ends, and only droughts after you connect count.
+    About one cycle per drought; logic asks for more water control the more droughts
+    you need (early up to 5, mid up to 15, late above). Older YAML values above 40 are
+    lowered to 40."""
     display_name = "Drought Cycles Goal"
     range_start = 5
-    range_end = 100
-    default = 25
+    range_end = 40
+    default = 15
 
 
-class BadtideCyclesGoal(Range):
-    """When 'Badtides' goal is active, the number of badtide cycles to survive."""
+class BadtideCyclesGoal(_ClampedRange):
+    """When 'Badtides' goal is active, the number of badtides to survive.
+    A badtide counts when it ends, and only badtides after you connect count.
+    Badtides start after a few cycles and come in about 40% of cycles, so each takes
+    two to three cycles. Logic asks for floodgates, tanks and cures (early up to 3,
+    mid up to 10, late above). Older YAML values above 20 are lowered to 20."""
     display_name = "Badtide Cycles Goal"
     range_start = 1
-    range_end = 50
-    default = 10
+    range_end = 20
+    default = 5
 
 
 class WellbeingGoal(Range):
@@ -139,14 +155,13 @@ class WaterStorageGoal(Range):
 
 
 class DroughtDifficulty(Range):
-    """
-    Scaling factor (1–5) for how hard droughts are during the randomizer run.
-    Higher values mean longer, more severe droughts.
-    """
-    display_name = "Drought Difficulty"
+    """Removed: this option never had an effect. Hazardous Weather traps set the
+    difficulty instead. Kept hidden so older YAMLs that set it still generate."""
+    display_name = "Drought Difficulty (removed)"
     range_start = 1
     range_end = 5
     default = 3
+    visibility = Visibility.none
 
 
 class IncludeTraps(Toggle):
@@ -237,23 +252,92 @@ class IncludeWonderMilestone(Toggle):
 class IncludeResourceMilestones(Toggle):
     """Include resource-threshold milestone locations (e.g. Reach 500 Logs, Reach 250 Metal Blocks).
     Each location fires once when your global resource count first passes the threshold.
-    Provides mid-game progression anchors tied to your production chain development."""
+    Provides mid-game progression anchors tied to your production chain development.
+    Resource Milestone Set chooses how many are included."""
     display_name = "Include Resource Milestones"
     default = 1
 
 
+class ResourceMilestoneSet(Choice):
+    """
+    Which resource milestones are included when Include Resource Milestones is on.
+    Each milestone fires when your stock of that good first reaches the threshold.
+    A milestone is only in logic once you can produce the good with your own
+    buildings; received resource packages never count for logic.
+    - classic: the original 13 milestones (Logs, Planks, Gears, Metal Blocks,
+      Treated Planks, Scrap Metal, and 500 Bread or 500 Corn Rations).
+    - lite: classic plus 18 early steps (10, 25 and 50 of the classic goods,
+      100 and 250 Logs, 50 and 100 Planks).
+    - full: lite plus 30 more milestones for other goods of your faction
+      (food, Pine Resin, Water, Extract, Explosives and more). 61 in total.
+    """
+    display_name = "Resource Milestone Set"
+    option_classic = 0
+    option_lite = 1
+    option_full = 2
+    default = 2
+
+
+class ResourcePackageSize(Range):
+    """
+    Percentage applied to the amount of every resource package you receive.
+    100 = default amounts (for example 100 Logs or 60 Bread), 50 = half, 300 = triple.
+    Amounts are rounded, and every package delivers at least 1.
+    """
+    display_name = "Resource Package Size"
+    range_start = 10
+    range_end = 1000
+    default = 100
+
+
+class GoodsDelivery(Choice):
+    """
+    Where received resource packages are delivered in your colony.
+    - district_center: into the District Center with the most beavers, the way the game
+      gives your starting goods. Its workers haul the goods to storage, builders can use
+      them right away, and beavers eat and drink from it. Goods it does not take go to
+      storage.
+    - storage: into finished storage buildings (warehouses, piles, tanks) that take the
+      good and have room.
+    In both modes, goods that find no place wait and are delivered as soon as there is room.
+    """
+    display_name = "Goods Delivery"
+    option_district_center = 0
+    option_storage = 1
+    default = 0
+
+
 class ForceEarlyItems(Toggle):
     """
-    When enabled, essential early-game blueprints (Forester, Stairs, Levee, Gear Workshop)
-    are forced into the first reachable sphere, guaranteeing they are available right away.
-    Platform and Floodgate are progression items and will also appear early, but are not
-    forced into sphere 1 to avoid fill errors when milestones are disabled.
+    When enabled, essential early-game blueprints (Forester, Stairs, Levee, Floodgate,
+    Medium Tank, Gear Workshop) are forced into the first reachable sphere, guaranteeing
+    they are available right away. The first badtide comes on a fixed cycle, so the
+    Floodgate and Medium Tank must not arrive late. With Progressive Items on, the first
+    Progressive Flood Control is forced instead of the Floodgate.
+    With Starting Blueprints on, Forester and Stairs are starting items instead, so they
+    are not forced. With Starting Blueprints off, the first sphere is too small for all of
+    them, so Floodgate and Medium Tank are not forced.
 
     When disabled, these items are placed freely like any other progression item and may
     appear anywhere in the multiworld. This makes the early game significantly harder and
     less predictable, but allows for more varied and challenging seeds.
     """
     display_name = "Force Early Items"
+    default = 1
+
+
+class StartingBlueprints(Toggle):
+    """
+    When enabled, you start with the Forester, Stairs and Platform blueprints
+    (with Progressive Platforms active, you start with its first step, the Platform).
+    They are unlocked as soon as you connect, so sustainable wood and basic vertical
+    building never wait on another player. These blueprints are taken out of the
+    item pool; their slots receive resource packages instead.
+
+    Force Early Items still puts Levee and Gear Workshop in sphere 1. With this
+    option off, Forester and Stairs are forced into sphere 1 instead.
+    """
+    display_name = "Starting Blueprints"
     default = 1
 
 
@@ -275,11 +359,13 @@ class ExtraEarlySurvival(Toggle):
 class LogicDifficulty(Choice):
     """
     Controls how strict the logic is for milestone accessibility.
-    - standard: Milestones are gated by tier only (lenient — assumes creative survival).
-    - strict: Survival milestones also require specific buildings
-      (e.g., badtide milestones require Levee + Floodgate, drought milestones require
-      water infrastructure). Ensures the solver places survival-critical items before
-      survival milestones become reachable.
+    Survival requirements apply in both modes: survival milestones, the Droughts and
+    Badtides goals and the long goals (Wonder, high Population, Well-being and Water
+    Storage) need the water control, tanks and cures to live through the hazards
+    (for example Floodgate, Levee and Medium Tank for the first badtide).
+    - standard: the survival requirements above, otherwise milestones are gated by tier.
+    - strict: also keeps the older per-milestone building lists (Levee, Floodgate,
+      Medium Tank), which the survival requirements now already include.
     """
     display_name = "Logic Difficulty"
     option_standard = 0
@@ -312,6 +398,10 @@ class TimberbornOptions(PerGameCommonOptions):
     include_survival_milestones: IncludeSurvivalMilestones
     include_wonder_milestone: IncludeWonderMilestone
     include_resource_milestones: IncludeResourceMilestones
+    resource_milestone_set: ResourceMilestoneSet
+    resource_package_size: ResourcePackageSize
+    goods_delivery: GoodsDelivery
     force_early_items: ForceEarlyItems
+    starting_blueprints: StartingBlueprints
     extra_early_survival: ExtraEarlySurvival
     logic_difficulty: LogicDifficulty

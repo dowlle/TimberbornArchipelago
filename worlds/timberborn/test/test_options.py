@@ -69,3 +69,21 @@ class TestMaxScienceCost(TimberbornTestBase):
     def test_max_price_matches_option(self):
         max_price = max(e["price"] for e in self.world.shop_layout)
         self.assertEqual(max_price, 10000)
+
+
+class TestGoodsDeliveryDefault(TimberbornTestBase):
+    """goods_delivery defaults to the District Center (0) in slot_data."""
+
+    def test_default_is_district_center(self):
+        from ..Options import GoodsDelivery
+        # The client (GoodsDeliveryOption.cs) reads 0 as district_center and 1 as storage.
+        self.assertEqual(GoodsDelivery.option_district_center, 0)
+        self.assertEqual(GoodsDelivery.option_storage, 1)
+        self.assertEqual(self.world.fill_slot_data()["goods_delivery"], 0)
+
+
+class TestGoodsDeliveryStorage(TimberbornTestBase):
+    options = {"goods_delivery": "storage"}
+
+    def test_storage_in_slot_data(self):
+        self.assertEqual(self.world.fill_slot_data()["goods_delivery"], 1)

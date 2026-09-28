@@ -5,7 +5,7 @@ Tier 1: Log, Plank (free resources)
 Tier 2: Gear, Paper, PineResin (Gear Workshop chain)
 Tier 3: MetalBlock, ScrapMetal (Smelter chain)
 Tier 4: TreatedPlank, Dirt, Extract, Explosives (advanced processing)
-Tier 5: MetalPart, Grease (Bot Part Factory / late-game)
+Tier 5: MetalPart, Grease (late-game policy; Metal Parts come from Metalsmith)
 
 Building tier = max tier of all its construction materials.
 Generated from blueprint JSONs via scripts/extract_building_tiers.py.
@@ -14,6 +14,12 @@ from __future__ import annotations
 
 # Shared + Folktails buildings (extracted from Folktails blueprint JSONs)
 BUILDING_TIERS: dict[str, int] = {
+    "Airlock": 3,
+    "Impermeable Power Shaft": 3,
+    "Compact Mechanical Pump": 4,
+    "Hall of Abundance": 4,
+    "Sauna": 2,
+    "Domed Garden": 4,
     # --- Tier 1 ---
     "Forester": 1,
     "Gear Workshop": 1,
@@ -148,6 +154,10 @@ BUILDING_TIERS: dict[str, int] = {
 
 # IronTeeth-exclusive buildings
 IT_BUILDING_TIERS: dict[str, int] = {
+    "Arch of Progress": 4,
+    "Massager": 2,
+    "Impermeable Tubeway": 3,
+    "Dance Pit": 5,
     # --- Tier 1 ---
     "Rowhouse": 1,
     "Large Barrack": 1,
@@ -169,6 +179,8 @@ IT_BUILDING_TIERS: dict[str, int] = {
     "Brazier": 3,
     "Bell": 3,
     "Decorative Clock": 3,
+    "Exercise Plaza": 3,
+    "Tribute to Ingenuity": 3,
     # --- Tier 4 ---
     "Coffee Brewery": 4,
     "Advanced Breeding Pod": 4,
@@ -179,7 +191,6 @@ IT_BUILDING_TIERS: dict[str, int] = {
     "Grease Factory": 4,
     "Motivatorium": 4,
     "Mud Bath": 4,
-    "Tribute to Ingenuity": 4,
     # --- Tier 5 ---
     "Oil Press": 5,
     "Hydroponic Garden": 5,
@@ -187,7 +198,6 @@ IT_BUILDING_TIERS: dict[str, int] = {
     "Steam Engine": 5,
     "Charging Station": 5,
     "Numbercruncher": 5,
-    "Exercise Plaza": 5,
     "Metal Fence": 5,
     "Beaver Bust": 5,
     "Flame of Unity": 5,

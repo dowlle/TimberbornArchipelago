@@ -1,3 +1,4 @@
+from BaseClasses import CollectionState
 from . import TimberbornTestBase
 
 
@@ -60,6 +61,7 @@ class TestBranchingCompletionReachable(TimberbornTestBase):
 
 class TestTier2RequiresForester(TimberbornTestBase):
     """Forester is needed for sustainable wood → gear production → tier 2."""
+    options = {"starting_blueprints": 0}  # otherwise Forester is a starting item
 
     def test_not_beatable_without_forester(self):
         self.collect_all_but("Blueprint: Forester")
@@ -269,18 +271,21 @@ class TestMilestoneTierGating(TimberbornTestBase):
             "Population 200 (T4) should be blocked without T4 tech"
         )
 
-    def test_wonder_milestone_requires_tier5(self):
-        """Wonder milestones require tier 5."""
+    def test_wonder_milestone_requires_tier4_not_bots(self):
+        """The wonder needs Treated Planks (tier 4) but no bots."""
         wonder_name = ("Wonder: Complete Earth Recultivator"
                        if self.world.faction == "Folktails"
                        else "Wonder: Complete Earth Repopulator")
         if wonder_name not in self.world.active_milestones:
             return
-        self.collect_all_but("Blueprint: Bot Part Factory")
+        self.collect_all_but("Blueprint: Tapper's Shack")
         self.assertFalse(
             self.can_reach_location(wonder_name),
-            f"{wonder_name} should be blocked without T5 tech"
+            f"{wonder_name} should be blocked without T4 tech"
         )
+        self.multiworld.state = CollectionState(self.multiworld)
+        self.collect_all_but(["Blueprint: Bot Part Factory", "Blueprint: Bot Assembler"])
+        self.assertTrue(self.can_reach_location(wonder_name), f"{wonder_name} should not need bots")
 
 
 # ============================================================================
@@ -290,6 +295,7 @@ class TestMilestoneTierGating(TimberbornTestBase):
 class TestStrictModeSurvivalRequirements(TimberbornTestBase):
     """Strict mode adds building requirements for survival milestones."""
     options = {
+        "starting_blueprints": 0,  # Stairs would be a starting item
         "logic_difficulty": 1,  # strict
         "include_survival_milestones": 1,
     }
@@ -313,14 +319,13 @@ class TestStrictModeSurvivalRequirements(TimberbornTestBase):
             "Strict mode: Survive 1st Badtide should require Floodgate"
         )
 
-    def test_survive_5_badtides_requires_stairs(self):
+    def test_survive_5_badtides_requires_medium_tank(self):
         if "Survival: Survive 5 Badtides" not in self.world.active_milestones:
             return
-        # Stairs is part of Progressive Platforms, so exclude both
-        self.collect_all_but(["Blueprint: Stairs", "Progressive Platforms"])
+        self.collect_all_but(["Blueprint: Medium Tank"])
         self.assertFalse(
             self.can_reach_location("Survival: Survive 5 Badtides"),
-            "Strict mode: Survive 5 Badtides should require Stairs"
+            "Strict mode: Survive 5 Badtides should require Medium Tank"
         )
 
 
@@ -328,13 +333,17 @@ class TestStrictModeSurvivalRequirements(TimberbornTestBase):
 # Goal completion conditions
 # ============================================================================
 
-class TestWonderGoalRequiresTier5(TimberbornTestBase):
-    """Wonder goal needs full tier 5 tech chain."""
-    options = {"goal_selection": {"Wonder"}}
+class TestWonderGoalNeedsNoBots(TimberbornTestBase):
+    """The Folktails wonder needs Extract and Paper, not the bot chain."""
+    options = {"goal_selection": {"Wonder"}, "progressive_items": 0}
 
-    def test_not_beatable_without_bot_chain(self):
+    def test_reachable_without_bot_chain(self):
         self.collect_all_but(["Blueprint: Bot Part Factory", "Blueprint: Bot Assembler"])
-        self.assertBeatable(False)
+        self.assertTrue(self.can_reach_location("Wonder: Complete Earth Recultivator"))
+
+    def test_blocked_without_paper_mill(self):
+        self.collect_all_but(["Blueprint: Paper Mill"])
+        self.assertFalse(self.can_reach_location("Wonder: Complete Earth Recultivator"))
 
     def test_beatable_with_full_chain(self):
         self.collect_all_but([])
@@ -362,10 +371,10 @@ class TestMultiGoalAll(TimberbornTestBase):
         self.collect_all_but([])
         self.assertBeatable(True)
 
-    def test_not_beatable_without_tier5(self):
-        """Wonder requires T5 — missing bot chain should block completion."""
-        self.collect_all_but(["Blueprint: Bot Part Factory", "Blueprint: Bot Assembler"])
-        self.assertBeatable(False)
+    def test_wonder_blocked_without_tier4(self):
+        """The wonder needs Treated Planks (tier 4); without them the goal is out of logic."""
+        self.collect_all_but(["Blueprint: Tapper's Shack"])
+        self.assertFalse(self.can_reach_location("Wonder: Complete Earth Recultivator"))
 
 
 class TestMultiGoalAny(TimberbornTestBase):

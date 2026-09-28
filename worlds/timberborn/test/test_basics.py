@@ -30,8 +30,10 @@ class TestDefaultGeneration(TimberbornTestBase):
                          f"Item pool ({item_count}) != locations ({location_count})")
 
     def test_all_blueprint_items_in_pool(self):
-        """Every blueprint should be in the pool directly or via a progressive item."""
+        """Every blueprint should be in the pool or the start inventory, directly or
+        via a progressive item."""
         pool_names = {item.name for item in self.multiworld.itempool}
+        pool_names |= {item.name for item in self.multiworld.precollected_items[self.player]}
         building_to_prog = get_building_to_progressive(
             self.world.faction, bool(self.world._progressive_chains))
         for bp_name in BLUEPRINT_ITEMS:
@@ -44,7 +46,7 @@ class TestDefaultGeneration(TimberbornTestBase):
                 self.assertIn(bp_name, pool_names, f"Missing blueprint item: {bp_name}")
 
     def test_correct_blueprint_count(self):
-        self.assertEqual(len(ALL_FT_BLUEPRINTS), 126, "Expected 126 Folktails blueprints")
+        self.assertEqual(len(ALL_FT_BLUEPRINTS), 132, "Expected 132 Folktails blueprints")
 
     def test_all_shop_locations_created(self):
         """Every shop layout entry should map to a created location."""
@@ -64,10 +66,11 @@ class TestDefaultGeneration(TimberbornTestBase):
         self.assertNotIn("Wonder: Complete Earth Repopulator", loc_names)
 
     def test_total_location_count(self):
-        self.assertEqual(len(ALL_BUILDING_NAMES), 126)
+        self.assertEqual(len(ALL_BUILDING_NAMES), 132)
         self.assertEqual(len(ALL_MILESTONE_LOCATIONS), 19)  # 18 FT + 1 IT wonder
         from ..Locations import RESOURCE_MILESTONE_LOCATIONS
-        # Total: pre-allocated shop slots + milestone locations + resource milestone locations
+        # Total: pre-allocated shop slots + milestone locations + resource milestone IDs
+        # (both factions; each player gets a faction-specific subset)
         total = len(location_name_to_id)
         expected_slots = 4 * 40  # NUM_PATHS * SLOTS_PER_PATH
         expected = expected_slots + 19 + len(RESOURCE_MILESTONE_LOCATIONS)
@@ -104,12 +107,12 @@ class TestBranchingGeneration(TimberbornTestBase):
 
     def test_shop_layout_exists(self):
         self.assertIsNotNone(self.world.shop_layout)
-        self.assertEqual(len(self.world.shop_layout), 126)
+        self.assertEqual(len(self.world.shop_layout), 132)
 
     def test_shop_layout_in_slot_data(self):
         slot_data = self.world.fill_slot_data()
         self.assertIn("shop_layout", slot_data)
-        self.assertEqual(len(slot_data["shop_layout"]), 126)
+        self.assertEqual(len(slot_data["shop_layout"]), 132)
 
     def test_shop_layout_has_4_paths(self):
         paths = {e["path"] for e in self.world.shop_layout}
@@ -120,8 +123,8 @@ class TestBranchingGeneration(TimberbornTestBase):
         for e in self.world.shop_layout:
             path_counts[e["path"]] = path_counts.get(e["path"], 0) + 1
         for path, count in path_counts.items():
-            self.assertIn(count, [31, 32],
-                          f"Path {path} has {count} locations (expected 31-32)")
+            self.assertEqual(count, 33,
+                             f"Path {path} has {count} locations (expected 33)")
 
     def test_prices_monotonically_increasing(self):
         sorted_by_pos = sorted(self.world.shop_layout, key=lambda e: e["global_pos"])
@@ -258,11 +261,11 @@ class TestAllMilestonesDisabled(TimberbornTestBase):
 
 class TestSlotDataMilestones(TimberbornTestBase):
     def test_milestones_in_slot_data(self):
-        from ..Locations import RESOURCE_MILESTONE_LOCATIONS
+        from ..Locations import FT_RESOURCE_MILESTONE_LOCATIONS
         slot_data = self.world.fill_slot_data()
         self.assertIn("milestones", slot_data)
-        # 7 pop + 4 wellbeing + 6 survival + 1 FT wonder + 13 resource = 31
-        expected = 18 + len(RESOURCE_MILESTONE_LOCATIONS)
+        # 7 pop + 4 wellbeing + 6 survival + 1 FT wonder + 61 resource (full set) = 79
+        expected = 18 + len(FT_RESOURCE_MILESTONE_LOCATIONS)
         self.assertEqual(len(slot_data["milestones"]), expected)
 
     def test_milestone_metadata_fields(self):
@@ -320,7 +323,9 @@ class TestITDefaultGeneration(TimberbornITTestBase):
 
     def test_shared_items_in_pool(self):
         pool_names = {item.name for item in self.multiworld.itempool}
-        self.assertIn("Blueprint: Forester", pool_names)
+        self.assertNotIn("Blueprint: Forester", pool_names)  # starting item
+        self.assertIn("Blueprint: Forester",
+                      {item.name for item in self.multiworld.precollected_items[self.player]})
         self.assertIn("Blueprint: Gear Workshop", pool_names)
         self.assertIn("Blueprint: Smelter", pool_names)
 
@@ -369,7 +374,8 @@ class TestProgressiveItemsOn(TimberbornTestBase):
 
     def test_progressive_item_counts(self):
         pool_names = [item.name for item in self.multiworld.itempool]
-        self.assertEqual(pool_names.count("Progressive Platforms"), 3)
+        # The first Progressive Platforms is a starting item (starting_blueprints).
+        self.assertEqual(pool_names.count("Progressive Platforms"), 2)
         self.assertEqual(pool_names.count("Progressive Flood Control"), 3)
         self.assertEqual(pool_names.count("Progressive Bridges"), 6)
         self.assertEqual(pool_names.count("Progressive Overhangs"), 5)
@@ -400,7 +406,7 @@ class TestProgressiveItemsOn(TimberbornTestBase):
 
 class TestProgressiveItemsOff(TimberbornTestBase):
     """progressive_items=off should use classic individual items."""
-    options = {"progressive_items": 0}
+    options = {"progressive_items": 0, "starting_blueprints": 0}
 
     def test_no_progressive_items_in_pool(self):
         pool_names = {item.name for item in self.multiworld.itempool}
@@ -437,10 +443,10 @@ class TestProgressiveItemsIT(TimberbornITTestBase):
 
 class TestITSlotDataMilestones(TimberbornITTestBase):
     def test_milestones_in_slot_data(self):
-        from ..Locations import RESOURCE_MILESTONE_LOCATIONS
+        from ..Locations import IT_RESOURCE_MILESTONE_LOCATIONS
         slot_data = self.world.fill_slot_data()
         self.assertIn("milestones", slot_data)
-        expected = 18 + len(RESOURCE_MILESTONE_LOCATIONS)
+        expected = 18 + len(IT_RESOURCE_MILESTONE_LOCATIONS)
         self.assertEqual(len(slot_data["milestones"]), expected)
 
     def test_wonder_is_earth_repopulator(self):

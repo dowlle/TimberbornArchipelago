@@ -4,13 +4,15 @@ from worlds.AutoWorld import World, WebWorld
 from BaseClasses import Region, Location, Item, ItemClassification, Tutorial, CollectionState
 from .Items import (TimberbornItem, item_table, item_name_to_id,
                     get_blueprint_items, get_building_names,
-                    BLUEPRINT_ITEMS, FILLER_ITEMS, TRAP_ITEMS, BOOSTS,
-                    SCOUT_ITEMS)
+                    BLUEPRINT_ITEMS, TRAP_ITEMS, BOOSTS,
+                    SCOUT_ITEMS, RESOURCE_PACKAGE_GOODS,
+                    RESOURCE_PACKAGE_BASE_AMOUNTS, get_resource_package_weights,
+                    scale_package_amount)
 from .Locations import (TimberbornLocation, location_table, location_name_to_id,
                         ALL_BUILDING_NAMES,
                         POPULATION_LOCATIONS, WELLBEING_LOCATIONS,
                         SURVIVAL_LOCATIONS, FT_WONDER_LOCATIONS,
-                        IT_WONDER_LOCATIONS, RESOURCE_MILESTONE_LOCATIONS)
+                        IT_WONDER_LOCATIONS, get_resource_milestones)
 from .Options import TimberbornOptions
 from .ProgressiveItems import get_progressive_chains, get_building_to_progressive
 from .BuildingTiers import get_building_tier
@@ -35,16 +37,42 @@ def _milestone_type(name: str) -> str:
 
 
 # Maps resource milestone display name to game GoodId string.
-# Display names match the second word in the milestone name after "Reach N ".
+# Display names are the rest of the milestone name after "Reach N ".
+# Mirrored by MilestoneCodec in the client; ids checked against 1.1 Goods blueprints.
 _RESOURCE_GOOD_IDS: dict[str, str] = {
-    "Logs":           "Log",
-    "Planks":         "Plank",
-    "Gears":          "Gear",
-    "Bread":          "Bread",
-    "Metal Blocks":   "MetalBlock",
-    "Treated Planks": "TreatedPlank",
-    "Scrap Metal":    "ScrapMetal",
+    "Logs":              "Log",
+    "Planks":            "Plank",
+    "Gears":             "Gear",
+    "Bread":             "Bread",
+    "Metal Blocks":      "MetalBlock",
+    "Treated Planks":    "TreatedPlank",
+    "Scrap Metal":       "ScrapMetal",
+    "Pine Resin":        "PineResin",
+    "Water":             "Water",
+    "Berries":           "Berries",
+    "Extract":           "Extract",
+    "Explosives":        "Explosives",
+    "Paper":             "Paper",
+    "Grilled Potatoes":  "GrilledPotato",
+    "Cattail Crackers":  "CattailCracker",
+    "Maple Pastries":    "MaplePastry",
+    "Books":             "Book",
+    "Biofuel":           "Biofuel",
+    "Antidote":          "Antidote",
+    "Corn Rations":      "CornRation",
+    "Fermented Cassava": "FermentedCassava",
+    "Eggplant Rations":  "EggplantRation",
+    "Fermented Soybean": "FermentedSoybean",
+    "Kohlrabi":          "Kohlrabi",
+    "Mangrove Fruit":    "MangroveFruit",
+    "Metal Parts":       "MetalPart",
+    "Coffee":            "Coffee",
+    "Grease":            "Grease",
 }
+
+# While the Water Storage goal is active, all water packages together must stay
+# under this amount (the goal's minimum), because the goal counts water in stock.
+_WATER_PACKAGE_LIMIT = 500
 
 
 def _milestone_good_id(name: str) -> str:
@@ -97,6 +125,20 @@ class TimberbornWorld(World):
     web = TimberbornWebWorld()
     options_dataclass = TimberbornOptions
 
+    # Universal Tracker: slot_data carries every per-seed draw the rules read
+    # (shop layout with slot tiers, progressive chains, active milestones, goals,
+    # starting items) and the logic options, so UT can rebuild the seed's logic
+    # from slot_data alone, without a player YAML. See generate_early.
+    ut_can_gen_without_yaml = True
+    # Bumped when slot_data gains fields the reconstruction needs.
+    UT_SLOT_DATA_VERSION = 1
+    # Logic options restored from slot_data on a Universal Tracker re-generation.
+    _UT_OPTION_KEYS: tuple[str, ...] = (
+        "goal_requirement", "population_goal", "population_mode", "drought_cycles_goal",
+        "badtide_cycles_goal", "wellbeing_goal", "bots_goal", "water_storage_goal",
+        "logic_difficulty", "randomization_style",
+    )
+
     item_name_to_id = item_name_to_id
     location_name_to_id = location_name_to_id
 
@@ -106,16 +148,79 @@ class TimberbornWorld(World):
     active_milestones: list[str] | None = None
     resolved_goals: set[str] | None = None
     _progressive_chains: dict[str, tuple[str, ...]] | None = None
+    _water_packages: int = 0
+    # Item name -> tier a Timberborn shop slot must have to hold it (#13).
+    placement_tiers: dict[str, int] | None = None
+    shop_capacity = None  # Rules.ShopCapacity, set in set_rules
+    starting_items: list[str] | None = None
+
+    # Starting blueprints (option starting_blueprints). The platform is the
+    # smallest one both factions share: Platform, 1x1x1, 6 planks, 100 science.
+    STARTING_BLUEPRINTS: tuple[str, ...] = ("Forester", "Stairs", "Platform")
+
+    # -----------------------------------------------------------------
+    # Universal Tracker
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def interpret_slot_data(slot_data: dict) -> dict:
+        """UT hook: re-generate this world with the slot_data as re_gen_passthrough."""
+        return slot_data
+
+    def _ut_passthrough(self) -> dict | None:
+        return getattr(self.multiworld, "re_gen_passthrough", {}).get(self.game)
+
+    def generate_early(self) -> None:
+        passthrough = self._ut_passthrough()
+        if passthrough:
+            self._ut_restore_options(passthrough)
+
+    def _ut_restore_options(self, passthrough: dict) -> None:
+        """Restore the options the rules read from the connected seed's slot_data, so the
+        re-generation reasons about that seed and not the tracking player's YAML. Keys a
+        seed does not carry (older slot_data) keep the tracker's own values."""
+        options = self.options
+        if "faction" in passthrough:
+            options.faction.value = 1 if passthrough["faction"] == "IronTeeth" else 0
+        if passthrough.get("goals"):
+            options.goal_selection.value = set(passthrough["goals"])
+        for key in self._UT_OPTION_KEYS:
+            if key in passthrough:
+                getattr(options, key).value = passthrough[key]
+        if "starting_items" in passthrough:
+            options.starting_blueprints.value = int(bool(passthrough["starting_items"]))
+
+    def _ut_shop_layout(self, passthrough: dict) -> list[dict]:
+        """The seed's shop layout from slot_data (slot, building and tier per location)."""
+        layout = []
+        for position, entry in enumerate(passthrough["shop_layout"]):
+            level = int(entry["level"])
+            layout.append({
+                "path": entry["path"],
+                "level": level,
+                "slot": level + 1,
+                "location_name": self.location_id_to_name[int(entry["location_id"])],
+                "building_name": entry["building_name"],
+                "price": entry["price"],
+                "tier": int(entry["tier"]),
+                "global_pos": position,
+            })
+        return layout
 
     def create_regions(self) -> None:
         from .ShopLayout import generate_shop_layout
 
         # Determine faction
         self.faction = "IronTeeth" if self.options.faction.value == 1 else "Folktails"
+        passthrough = self._ut_passthrough()
 
         # Resolve progressive item chains based on option
         prog_opt = self.options.progressive_items.value
-        if prog_opt == 2:  # on
+        if passthrough and "progressive_chains" in passthrough:
+            # Universal Tracker: the seed's draw, not a new one.
+            self._progressive_chains = {name: tuple(chain) for name, chain
+                                        in passthrough["progressive_chains"].items()}
+        elif prog_opt == 2:  # on
             self._progressive_chains = get_progressive_chains(self.faction, True)
         elif prog_opt == 1:  # grouped_random
             all_chains = get_progressive_chains(self.faction, True)
@@ -147,7 +252,10 @@ class TimberbornWorld(World):
         if self.options.include_wonder_milestone or "Wonder" in self.options.goal_selection.value:
             self.active_milestones.extend(wonder_locs)
         if self.options.include_resource_milestones:
-            self.active_milestones.extend(RESOURCE_MILESTONE_LOCATIONS)
+            self.active_milestones.extend(get_resource_milestones(
+                self.faction, self.options.resource_milestone_set.value))
+        if passthrough and "milestones" in passthrough:
+            self.active_milestones = [m["name"] for m in passthrough["milestones"]]
 
         for loc_name in self.active_milestones:
             loc_id = location_name_to_id[loc_name]
@@ -170,12 +278,15 @@ class TimberbornWorld(World):
 
         # Branching shop — 4 paths with sequential ordering
         building_names = get_building_names(self.faction)
-        self.shop_layout = generate_shop_layout(
-            self,
-            building_names,
-            self.options.max_science_cost.value,
-            self.options.science_cost_multiplier.value,
-        )
+        if passthrough and "shop_layout" in passthrough:
+            self.shop_layout = self._ut_shop_layout(passthrough)
+        else:
+            self.shop_layout = generate_shop_layout(
+                self,
+                building_names,
+                self.options.max_science_cost.value,
+                self.options.science_cost_multiplier.value,
+            )
         shop_region = Region("Shop", self.player, self.multiworld)
         self.multiworld.regions.append(shop_region)
         menu.connect(shop_region)
@@ -217,16 +328,43 @@ class TimberbornWorld(World):
 
         # --- Blueprint items (faction-specific, with progressive swaps) ---
         blueprint_items = get_blueprint_items(self.faction, self._progressive_chains)
+
+        # Starting blueprints leave the pool and go to the start inventory.
+        self.starting_items = []
+        passthrough = self._ut_passthrough()
+        if passthrough and "starting_items" in passthrough:
+            starting = list(passthrough["starting_items"])
+        elif self.options.starting_blueprints:
+            starting = self._starting_item_names()
+        else:
+            starting = []
+        if starting:
+            for item_name in starting:
+                blueprint_items.remove(item_name)
+                self.multiworld.push_precollected(self.create_item(item_name))
+                self.starting_items.append(item_name)
+
         for item_name in blueprint_items:
             self.multiworld.itempool.append(self.create_item(item_name))
             items_created += 1
 
         # Essential buildings must be available from sphere 1 (if option enabled)
         if self.options.force_early_items:
-            self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
-            self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
+            if not self.options.starting_blueprints:
+                self.multiworld.early_items[self.player]["Blueprint: Forester"] = 1
+                self.multiworld.early_items[self.player]["Blueprint: Stairs"] = 1
             self.multiworld.early_items[self.player]["Blueprint: Levee"] = 1
             self.multiworld.early_items[self.player]["Blueprint: Gear Workshop"] = 1
+            # The first badtide comes on a fixed cycle whatever items arrived, and
+            # floodgates are the core badtide tool. Medium Tank holds the clean water.
+            # With Progressive Flood Control active, its first copy is the Floodgate.
+            # Sphere 1 must have room: without the starting Forester it is only the
+            # first slot of each shop path plus tier 1 milestones, which Forester,
+            # Stairs, Levee, Gear Workshop and the extra early survival picks
+            # already fill (fuzz: 19/10,000 fill failures when forced there too).
+            if self.options.starting_blueprints:
+                for building in ("Floodgate", "Medium Tank"):
+                    self.multiworld.early_items[self.player][self._item_for_building(building)] = 1
 
             # Randomly sample survival buildings into early spheres.
             # Each category picks 1 random candidate per seed for variety.
@@ -277,13 +415,57 @@ class TimberbornWorld(World):
                 self.multiworld.itempool.append(self.create_item(name))
                 items_created += 1
 
-        # --- Filler — pad to match location count ---
+        # --- Resource packages — pad to match location count ---
         filler_needed = unfilled - items_created
-        if filler_needed > 0:
-            filler_cycle = [name for name, _, count in FILLER_ITEMS for _ in range(count)]
-            for i in range(filler_needed):
-                name = filler_cycle[i % len(filler_cycle)]
-                self.multiworld.itempool.append(self.create_item(name))
+        for _ in range(max(0, filler_needed)):
+            self.multiworld.itempool.append(self.create_item(self._draw_resource_package()))
+
+    def _item_for_building(self, building: str) -> str:
+        """Pool item that unlocks *building* first: its progressive item or its blueprint."""
+        for prog, chain in (self._progressive_chains or {}).items():
+            if building in chain:
+                return prog
+        return f"Blueprint: {building}"
+
+    def _starting_item_names(self) -> list[str]:
+        """Item names of the starting blueprints; a chain member gives its first step."""
+        names = []
+        for building in self.STARTING_BLUEPRINTS:
+            progressive = next((prog for prog, chain in (self._progressive_chains or {}).items()
+                                if building in chain), None)
+            if progressive is not None:
+                assert self._progressive_chains[progressive][0] == building, building
+                names.append(progressive)
+            else:
+                names.append(f"Blueprint: {building}")
+        return names
+
+    # -----------------------------------------------------------------
+    # Resource packages — weighted random draw per faction
+    # -----------------------------------------------------------------
+
+    def resource_package_amount(self, name: str) -> int:
+        """Delivered amount of a resource package after the size option."""
+        return scale_package_amount(RESOURCE_PACKAGE_BASE_AMOUNTS[name],
+                                    self.options.resource_package_size.value)
+
+    def _max_water_packages(self) -> int | None:
+        """Water package cap while the Water Storage goal is active, else None."""
+        if "Water Storage" not in (self.resolved_goals or set()):
+            return None
+        return (_WATER_PACKAGE_LIMIT - 1) // self.resource_package_amount("Package: Water")
+
+    def _draw_resource_package(self) -> str:
+        """Draw one package by faction weight, keeping total water under the cap."""
+        weights = get_resource_package_weights(self.faction)
+        water_cap = self._max_water_packages()
+        if water_cap is not None and self._water_packages >= water_cap:
+            weights.pop("Package: Water", None)
+        names = list(weights)
+        name = self.random.choices(names, weights=[weights[n] for n in names])[0]
+        if name == "Package: Water":
+            self._water_packages += 1
+        return name
 
     # -----------------------------------------------------------------
     # Early survival items — random per seed
@@ -348,11 +530,29 @@ class TimberbornWorld(World):
         return TimberbornItem(name, data["classification"], data["id"], self.player)
 
     def get_filler_item_name(self) -> str:
-        filler_names = [name for name, _, _ in FILLER_ITEMS]
-        return self.random.choice(filler_names)
+        return self._draw_resource_package()
 
     def set_rules(self) -> None:
         set_rules(self)
+
+    def fill_hook(self, progitempool, usefulitempool, filleritempool, fill_locations) -> None:
+        """Place this world's tier-restricted blueprints first, highest tier first (#13).
+
+        Shop slot tiers are nested (a tier 4 blueprint fits every slot a tier 5
+        one fits, and more), so placing the most restricted items first never
+        uses up a slot a later item needed. Fill pops items from the end of
+        each pool, so these items go to the end in ascending tier. No
+        blueprint is filler, so the filler pool needs no ordering.
+        """
+        tiers = self.placement_tiers or {}
+
+        def tier(item) -> int:
+            if item.player != self.player or item.game != self.game:
+                return 0
+            return tiers.get(item.name, 0)
+
+        usefulitempool.sort(key=tier)
+        progitempool.sort(key=tier)
 
     def collect_item(self, state: CollectionState, item: Item,
                      remove: bool = False) -> Optional[str]:
@@ -392,10 +592,30 @@ class TimberbornWorld(World):
             "wellbeing_goal": self.options.wellbeing_goal.value,
             "bots_goal": self.options.bots_goal.value,
             "water_storage_goal": self.options.water_storage_goal.value,
-            "drought_difficulty": self.options.drought_difficulty.value,
             "faction": self.faction,
+            # Precollected blueprints; the server also sends them as items.
+            "starting_items": list(self.starting_items or []),
             "science_cost_multiplier": self.options.science_cost_multiplier.value,
             "skip_count": self.options.skip_count.value,
+            "resource_milestone_set": self.options.resource_milestone_set.value,
+            # Percent applied to every resource package. The client treats a
+            # missing value as 100 (seeds generated before this option).
+            "resource_package_percent": self.options.resource_package_size.value,
+            # 0 = district_center, 1 = storage. The client treats a missing value as
+            # district_center (seeds generated before this option).
+            "goods_delivery": self.options.goods_delivery.value,
+            # Universal Tracker reconstruction (see generate_early).
+            "logic_difficulty": self.options.logic_difficulty.value,
+            "ut_version": self.UT_SLOT_DATA_VERSION,
+            # Final delivered amount and GoodId per package item this faction
+            # can receive, so the client never derives amounts from item names.
+            "resource_packages": {
+                name: {
+                    "good_id": RESOURCE_PACKAGE_GOODS[name],
+                    "amount": self.resource_package_amount(name),
+                }
+                for name in get_resource_package_weights(self.faction)
+            },
             "progressive_chains": {
                 name: list(chain)
                 for name, chain in (self._progressive_chains or {}).items()

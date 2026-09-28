@@ -1,4 +1,5 @@
 from BaseClasses import Item, ItemClassification
+from .ItemIds import ITEM_IDS
 
 # ---------------------------------------------------------------------------
 # Base IDs — ranges reserved per category
@@ -44,16 +45,16 @@ WOOD_BLUEPRINTS = [
     ("Forester",                    ItemClassification.progression), # 30   S
     ("Gear Workshop",               ItemClassification.progression), # 100  S
     ("Paper Mill",                  ItemClassification.progression), # 250  F
-    ("Printing Press",              ItemClassification.useful),      # 400  F
+    ("Printing Press",              ItemClassification.progression), # 400  F
     ("Tapper's Shack",              ItemClassification.progression), # 500  S
     ("Wood Workshop",               ItemClassification.progression), # 800  S
 ]
 
 # --- FOOD ---
 FOOD_BLUEPRINTS = [
-    ("Aquatic Farmhouse",           ItemClassification.useful),      # 150  F
+    ("Aquatic Farmhouse",           ItemClassification.progression), # 150  F
     ("Bakery",                      ItemClassification.progression), # 160  F
-    ("Gristmill",                   ItemClassification.useful),      # 180  F
+    ("Gristmill",                   ItemClassification.progression), # 180  F
     ("Beehive",                     ItemClassification.useful),      # 400  F
 ]
 
@@ -68,33 +69,35 @@ HOUSING_BLUEPRINTS = [
 STORAGE_BLUEPRINTS = [
     ("Medium Tank",                 ItemClassification.progression),  # 120  S
     ("Large Warehouse",             ItemClassification.useful),      # 250  S
-    ("Large Tank",                  ItemClassification.useful),      # 600  S
+    ("Large Tank",                  ItemClassification.progression), # 600  S
     ("Underground Pile",            ItemClassification.useful),      # 1000 F
 ]
 
 # --- WATER ---
 WATER_BLUEPRINTS = [
-    ("Badwater Pump",               ItemClassification.useful),      # 250  F
+    ("Compact Mechanical Pump",     ItemClassification.progression), # 4000 S
+    ("Badwater Pump",               ItemClassification.progression), # 250  F
     ("Fill Valve",                  ItemClassification.useful),      # 300  S
     ("Fluid Dump",                  ItemClassification.useful),      # 250  S
     ("Large Water Pump",            ItemClassification.progression), # 400  F
     ("Aquifer Drill",               ItemClassification.useful),      # 400  S
-    ("Centrifuge",                  ItemClassification.useful),      # 600  S
+    ("Centrifuge",                  ItemClassification.progression), # 600  S
     ("Badwater Dome",               ItemClassification.useful),      # 2000 F
-    ("Mechanical Fluid Pump",       ItemClassification.useful),      # 2500 F
+    ("Mechanical Fluid Pump",       ItemClassification.progression), # 2500 F
     ("Badwater Rig",                ItemClassification.useful),      # 4000 F
 ]
 
 # --- LANDSCAPING ---
 LANDSCAPING_BLUEPRINTS = [
+    ("Airlock",                     ItemClassification.useful),      # 300  S
     ("Levee",                       ItemClassification.progression),  # 120  S
     ("Floodgate",                   ItemClassification.progression), # 150  S
     ("Impermeable Floor",           ItemClassification.useful),      # 200  S
-    ("Double Floodgate",            ItemClassification.useful),      # 250  S
+    ("Double Floodgate",            ItemClassification.progression), # 250  S
     ("Contamination Barrier",       ItemClassification.useful),      # 400  F
     ("Explosives Factory",          ItemClassification.progression), # 400  S
     ("Valve",                       ItemClassification.useful),      # 500  S
-    ("Triple Floodgate",            ItemClassification.useful),      # 500  S
+    ("Triple Floodgate",            ItemClassification.progression), # 500  S
     ("Dynamite",                    ItemClassification.useful),      # 600  S
     ("Double Dynamite",             ItemClassification.useful),      # 900  S
     ("Terrain Block",               ItemClassification.useful),      # 1000 S
@@ -112,6 +115,7 @@ METAL_BLUEPRINTS = [
 
 # --- POWER ---
 POWER_BLUEPRINTS = [
+    ("Impermeable Power Shaft",      ItemClassification.useful),      # 300  S
     ("Vertical Power Shaft",        ItemClassification.useful),      # 40   S
     ("Wind Turbine",                ItemClassification.progression), # 120  F
     ("Geothermal Engine",           ItemClassification.progression), # 160  S
@@ -136,11 +140,13 @@ DISTRICT_BLUEPRINTS = [
 
 # --- WELLBEING ---
 WELLBEING_BLUEPRINTS = [
+    ("Sauna",                       ItemClassification.useful),      # 300  F
+    ("Domed Garden",                ItemClassification.useful),      # 800  F
     ("Shower",                      ItemClassification.progression),  # 50   F
     ("Medical Bed",                 ItemClassification.progression),  # 80   S
     ("Contemplation Spot",          ItemClassification.useful),      # 100  F
     ("Lido",                        ItemClassification.useful),      # 250  F
-    ("Herbalist",                   ItemClassification.useful),      # 300  F
+    ("Herbalist",                   ItemClassification.progression), # 300  F
     ("Agora",                       ItemClassification.useful),      # 400  F
     ("Carousel",                    ItemClassification.useful),      # 700  F
     ("Detailer",                    ItemClassification.useful),      # 1000 S
@@ -185,7 +191,7 @@ AUTOMATION_BLUEPRINTS = [
     ("Resource Counter",            ItemClassification.useful),      # 250  S
     ("Science Counter",             ItemClassification.useful),      # 300  S
     ("Weather Station",             ItemClassification.useful),      # 300  S
-    ("Contamination Sensor",        ItemClassification.useful),      # 400  S
+    ("Contamination Sensor",        ItemClassification.progression), # 400  S
     ("Indicator",                   ItemClassification.useful),      # 400  S
     ("Speaker",                     ItemClassification.useful),      # 500  S
     ("Power Meter",                 ItemClassification.useful),      # 600  S
@@ -220,6 +226,7 @@ DECORATION_BLUEPRINTS = [
 
 # --- FOLKTAILS MONUMENTS (pre-Wonder) ---
 FT_MONUMENT_BLUEPRINTS = [
+    ("Hall of Abundance",            ItemClassification.useful),      # 15000 F
     ("Farmer Monument",             ItemClassification.useful),      # 1000  F
     ("Brazier of Bonding",          ItemClassification.useful),      # 3000  F
     ("Fountain of Joy",             ItemClassification.useful),      # 12000 F
@@ -227,8 +234,8 @@ FT_MONUMENT_BLUEPRINTS = [
 ]
 
 # ---------------------------------------------------------------------------
-# All Folktails blueprint items in a stable order (order must NEVER change
-# once assigned IDs, to avoid shifting existing IDs).
+# Folktails blueprint categories. Permanent IDs live in ItemIds.py and do not
+# depend on category order.
 # ---------------------------------------------------------------------------
 ALL_FT_BLUEPRINTS: list[tuple[str, ItemClassification]] = (
     WOOD_BLUEPRINTS
@@ -262,10 +269,10 @@ IT_WOOD_BLUEPRINTS: list[tuple[str, ItemClassification]] = [
 # --- IT FOOD ---
 IT_FOOD_BLUEPRINTS = [
     # FarmHouse (SC=0) and Fermenter (SC=0) are free
-    ("Oil Press",                   ItemClassification.useful),      # 120
+    ("Oil Press",                   ItemClassification.progression), # 120
     ("Hydroponic Garden",           ItemClassification.useful),      # 200
-    ("Food Factory",                ItemClassification.useful),      # 300
-    ("Coffee Brewery",              ItemClassification.useful),      # 500
+    ("Food Factory",                ItemClassification.progression), # 300
+    ("Coffee Brewery",              ItemClassification.progression), # 500
 ]
 
 # --- IT HOUSING ---
@@ -285,8 +292,8 @@ IT_STORAGE_BLUEPRINTS: list[tuple[str, ItemClassification]] = [
 # --- IT WATER ---
 IT_WATER_BLUEPRINTS = [
     # DeepWaterPump (SC=0) is free
-    ("Deep Badwater Pump",          ItemClassification.useful),      # 250
-    ("Deep Mechanical Fluid Pump",  ItemClassification.useful),      # 2500
+    ("Deep Badwater Pump",          ItemClassification.progression), # 250
+    ("Deep Mechanical Fluid Pump",  ItemClassification.progression), # 2500
     ("Badwater Discharge",          ItemClassification.useful),      # 4000
 ]
 
@@ -297,14 +304,14 @@ IT_LANDSCAPING_BLUEPRINTS = [
 
 # --- IT METAL ---
 IT_METAL_BLUEPRINTS = [
-    ("Metalsmith",                  ItemClassification.useful),      # 150
+    ("Metalsmith",                  ItemClassification.progression), # 150; Dance Pit needs Metal Parts
     ("Efficient Mine",              ItemClassification.useful),      # 4000
 ]
 
 # --- IT POWER ---
 IT_POWER_BLUEPRINTS = [
     # CompactWaterWheel (SC=0) and LargePowerWheel (SC=0) are free
-    ("Large Water Wheel",           ItemClassification.useful),      # 200
+    ("Large Water Wheel",           ItemClassification.progression), # 200
     ("Steam Engine",                ItemClassification.progression), # 400
 ]
 
@@ -313,15 +320,17 @@ IT_SCIENCE_BLUEPRINTS = [
     ("Charging Station",            ItemClassification.useful),      # 200
     ("Control Tower",               ItemClassification.useful),      # 1000
     ("Numbercruncher",              ItemClassification.useful),      # 1500
-    ("Grease Factory",              ItemClassification.useful),      # 2000
+    ("Grease Factory",              ItemClassification.progression), # 2000
 ]
 
 # --- IT WELLBEING ---
 IT_WELLBEING_BLUEPRINTS = [
+    ("Massager",                    ItemClassification.useful),      # 150
+    ("Dance Pit",                   ItemClassification.useful),      # 1800
     ("Double Shower",               ItemClassification.useful),      # 50
     ("Scratcher",                   ItemClassification.useful),      # 100
     ("Swimming Pool",               ItemClassification.useful),      # 250
-    ("Decontamination Pod",         ItemClassification.useful),      # 400
+    ("Decontamination Pod",         ItemClassification.progression), # 400
     ("Exercise Plaza",              ItemClassification.useful),      # 400
     ("Wind Tunnel",                 ItemClassification.useful),      # 700
     ("Motivatorium",                ItemClassification.useful),      # 1200
@@ -330,6 +339,7 @@ IT_WELLBEING_BLUEPRINTS = [
 
 # --- IT PATHS ---
 IT_PATH_BLUEPRINTS = [
+    ("Impermeable Tubeway",          ItemClassification.useful),      # 800
     ("Tubeway",                     ItemClassification.useful),      # 500
     ("Vertical Tubeway",            ItemClassification.useful),      # 600
     ("Tubeway Station",             ItemClassification.useful),      # 700
@@ -346,6 +356,7 @@ IT_DECORATION_BLUEPRINTS = [
 
 # --- IT MONUMENTS (pre-Wonder) ---
 IT_MONUMENT_BLUEPRINTS = [
+    ("Arch of Progress",            ItemClassification.useful),      # 15000
     ("Laborer Monument",            ItemClassification.useful),      # 1000
     ("Flame of Unity",              ItemClassification.useful),      # 3000
     ("Tribute to Ingenuity",        ItemClassification.useful),      # 12000
@@ -353,8 +364,7 @@ IT_MONUMENT_BLUEPRINTS = [
 ]
 
 # ---------------------------------------------------------------------------
-# All IronTeeth-exclusive blueprint items in a stable order.
-# IDs assigned from IT_BLUEPRINT_BASE — order must NEVER change.
+# IronTeeth-exclusive blueprint categories. IDs are explicit in ItemIds.py.
 # ---------------------------------------------------------------------------
 ALL_IT_ONLY_BLUEPRINTS: list[tuple[str, ItemClassification]] = (
     IT_WOOD_BLUEPRINTS
@@ -378,6 +388,7 @@ ALL_IT_ONLY_BLUEPRINTS: list[tuple[str, ItemClassification]] = (
 # ScavengerFlag is a shared building but free (SC=0) for IT, so it's FT-only in AP.
 # ---------------------------------------------------------------------------
 _FT_ONLY_NAMES: set[str] = {
+    "Hall of Abundance", "Sauna", "Domed Garden",
     # Wood
     "Paper Mill", "Printing Press",
     # Food
@@ -434,7 +445,8 @@ SCOUT_ITEMS: list[tuple[str, ItemClassification]] = [
 ]
 
 # ---------------------------------------------------------------------------
-# Filler — resource care packages delivered to nearest District Center
+# Legacy filler — fixed-amount resource items from seeds generated before the
+# resource packages below. Kept so existing seeds and IDs keep working.
 # ---------------------------------------------------------------------------
 FILLER_ITEMS: list[tuple[str, ItemClassification, int]] = [
     # name,                              classification,              count
@@ -446,6 +458,71 @@ FILLER_ITEMS: list[tuple[str, ItemClassification, int]] = [
     ("Filler: 10 Treated Planks",       ItemClassification.filler,   3),
     ("Filler: 5 Scrap Metal",           ItemClassification.filler,   3),
 ]
+
+# ---------------------------------------------------------------------------
+# Resource packages — goods delivered to storage, drawn into the pool by
+# faction weight. Names carry no amount: the delivered amount is the base
+# amount scaled by the resource_package_size option, and slot_data tells the
+# client the final amount. The legacy "Filler: N Good" items above keep their
+# names and IDs for existing seeds but are no longer placed.
+# ---------------------------------------------------------------------------
+RESOURCE_PACKAGES: list[tuple[str, str, int, int, int]] = [
+    # name,                            good id,             base, FT, IT weight
+    ("Package: Logs",                 "Log",                100,  4, 4),
+    ("Package: Planks",               "Plank",              50,   5, 5),
+    ("Package: Gears",                "Gear",               25,   5, 5),
+    ("Package: Treated Planks",       "TreatedPlank",       20,   4, 4),
+    ("Package: Metal Blocks",         "MetalBlock",         15,   5, 4),
+    ("Package: Scrap Metal",          "ScrapMetal",         30,   3, 2),
+    ("Package: Pine Resin",           "PineResin",          20,   2, 3),
+    ("Package: Extract",              "Extract",            15,   2, 2),
+    ("Package: Explosives",           "Explosives",         10,   1, 1),
+    ("Package: Water",                "Water",              60,   3, 3),
+    ("Package: Berries",              "Berries",            60,   2, 2),
+    ("Package: Dirt",                 "Dirt",               40,   0, 1),
+    ("Package: Paper",                "Paper",              40,   2, 0),
+    ("Package: Books",                "Book",               10,   1, 0),
+    ("Package: Antidote",             "Antidote",           10,   1, 0),
+    ("Package: Biofuel",              "Biofuel",            25,   1, 0),
+    ("Package: Bread",                "Bread",              60,   4, 0),
+    ("Package: Grilled Potatoes",     "GrilledPotato",      60,   3, 0),
+    ("Package: Cattail Crackers",     "CattailCracker",     60,   2, 0),
+    ("Package: Maple Pastries",       "MaplePastry",        30,   2, 0),
+    ("Package: Grilled Chestnuts",    "GrilledChestnut",    40,   1, 0),
+    ("Package: Grilled Spadderdock",  "GrilledSpadderdock", 45,   1, 0),
+    ("Package: Carrots",              "Carrot",             40,   1, 0),
+    ("Package: Sunflower Seeds",      "SunflowerSeeds",     30,   1, 0),
+    ("Package: Metal Parts",          "MetalPart",          10,   0, 2),
+    ("Package: Coffee",               "Coffee",             30,   0, 2),
+    ("Package: Grease",               "Grease",             10,   0, 1),
+    ("Package: Corn Rations",         "CornRation",         60,   0, 4),
+    ("Package: Fermented Cassava",    "FermentedCassava",   60,   0, 3),
+    ("Package: Eggplant Rations",     "EggplantRation",     60,   0, 2),
+    ("Package: Fermented Soybean",    "FermentedSoybean",   60,   0, 2),
+    ("Package: Kohlrabi",             "Kohlrabi",           40,   0, 2),
+    ("Package: Mangrove Fruit",       "MangroveFruit",      40,   0, 2),
+]
+
+RESOURCE_PACKAGE_GOODS: dict[str, str] = {name: good for name, good, _, _, _ in RESOURCE_PACKAGES}
+RESOURCE_PACKAGE_BASE_AMOUNTS: dict[str, int] = {
+    name: amount for name, _, amount, _, _ in RESOURCE_PACKAGES
+}
+
+
+def get_resource_package_weights(faction: str) -> dict[str, int]:
+    """Pool weight of every resource package the faction can store (weight > 0)."""
+    column = 4 if faction == "IronTeeth" else 3
+    return {row[0]: row[column] for row in RESOURCE_PACKAGES if row[column] > 0}
+
+
+def scale_package_amount(base_amount: int, percent: int) -> int:
+    """Base amount scaled by a percentage, rounded half up, at least 1.
+
+    Integer arithmetic so the client (ResourcePackages.ScaleAmount) gets
+    exactly the same result.
+    """
+    return max(1, (base_amount * percent + 50) // 100)
+
 
 # ---------------------------------------------------------------------------
 # Traps — negative effects sent from/to other players
@@ -465,62 +542,69 @@ TRAP_ITEMS: list[tuple[str, ItemClassification, int]] = [
 item_table: dict[str, dict] = {}
 
 # Folktails blueprints (shared + FT-only) — IDs frozen from FT_BLUEPRINT_BASE
-for i, (name, classification) in enumerate(ALL_FT_BLUEPRINTS):
+for name, classification in ALL_FT_BLUEPRINTS:
     item_table[f"Blueprint: {name}"] = {
         "classification": classification,
         "count": 1,
-        "id": FT_BLUEPRINT_BASE + i,
+        "id": ITEM_IDS[f"Blueprint: {name}"],
     }
 
 # IronTeeth-exclusive blueprints — IDs from IT_BLUEPRINT_BASE
-for i, (name, classification) in enumerate(ALL_IT_ONLY_BLUEPRINTS):
+for name, classification in ALL_IT_ONLY_BLUEPRINTS:
     item_table[f"Blueprint: {name}"] = {
         "classification": classification,
         "count": 1,
-        "id": IT_BLUEPRINT_BASE + i,
+        "id": ITEM_IDS[f"Blueprint: {name}"],
     }
 
 # Boosts
-for i, (name, classification) in enumerate(BOOSTS):
+for name, classification in BOOSTS:
     item_table[name] = {
         "classification": classification,
         "count": 1,
-        "id": BOOST_BASE + i,
+        "id": ITEM_IDS[name],
     }
 
 # Scouts
-for i, (name, classification) in enumerate(SCOUT_ITEMS):
+for name, classification in SCOUT_ITEMS:
     item_table[name] = {
         "classification": classification,
         "count": 1,
-        "id": SCOUT_BASE + i,
+        "id": ITEM_IDS[name],
     }
 
 # Filler
-for i, (name, classification, count) in enumerate(FILLER_ITEMS):
+for name, classification, count in FILLER_ITEMS:
     item_table[name] = {
         "classification": classification,
         "count": count,
-        "id": FILLER_BASE + i,
+        "id": ITEM_IDS[name],
+    }
+
+# Resource packages — count is decided at generation time by faction weight
+for name, _, _, _, _ in RESOURCE_PACKAGES:
+    item_table[name] = {
+        "classification": ItemClassification.filler,
+        "count": 0,
+        "id": ITEM_IDS[name],
     }
 
 # Traps
-for i, (name, classification, count) in enumerate(TRAP_ITEMS):
+for name, classification, count in TRAP_ITEMS:
     item_table[name] = {
         "classification": classification,
         "count": count,
-        "id": TRAP_BASE + i,
+        "id": ITEM_IDS[name],
     }
 
 # Skip — count determined at runtime by SkipCount option
 item_table["Skip"] = {
     "classification": ItemClassification.useful,
     "count": 0,
-    "id": SKIP_BASE,
+    "id": ITEM_IDS["Skip"],
 }
 
-# Progressive items — IDs frozen from PROGRESSIVE_BASE.
-# Order must NEVER change once assigned.
+# Progressive items use explicit IDs from ItemIds.py, independent of chain order.
 from .ProgressiveItems import SHARED_PROGRESSIVE_CHAINS, FT_PROGRESSIVE_CHAINS, IT_PROGRESSIVE_CHAINS
 
 _ALL_PROGRESSIVE_CHAINS: list[tuple[str, tuple[str, ...]]] = (
@@ -529,11 +613,11 @@ _ALL_PROGRESSIVE_CHAINS: list[tuple[str, tuple[str, ...]]] = (
     + list(IT_PROGRESSIVE_CHAINS.items())
 )
 
-for i, (prog_name, chain) in enumerate(_ALL_PROGRESSIVE_CHAINS):
+for prog_name, chain in _ALL_PROGRESSIVE_CHAINS:
     item_table[prog_name] = {
         "classification": ItemClassification.progression,
         "count": len(chain),
-        "id": PROGRESSIVE_BASE + i,
+        "id": ITEM_IDS[prog_name],
     }
 
 item_name_to_id: dict[str, int] = {name: data["id"] for name, data in item_table.items()}

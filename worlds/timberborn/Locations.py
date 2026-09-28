@@ -38,7 +38,8 @@ ALL_SCIENCE_LOCATIONS: list[str] = [
 # to draw from.  These are NOT location names; they're just the reference pool.
 #
 # Faction-specific pools are built via Items.get_building_names(faction).
-# The lists below are kept for reference and backward compatibility.
+# Category lists below are legacy 1.0 snapshots, retained for compatibility.
+# Use Items.get_building_names for current pools; ALL_BUILDING_NAMES delegates to it.
 # ---------------------------------------------------------------------------
 
 # --- WOOD ---
@@ -142,13 +143,9 @@ IT_MONUMENT_BUILDINGS = [
     "Laborer Monument", "Flame of Unity", "Tribute to Ingenuity",
 ]
 
-ALL_BUILDING_NAMES: list[str] = (
-    WOOD_BUILDINGS + FOOD_BUILDINGS + HOUSING_BUILDINGS + STORAGE_BUILDINGS
-    + WATER_BUILDINGS + LANDSCAPING_BUILDINGS + METAL_BUILDINGS
-    + POWER_BUILDINGS + SCIENCE_PRODUCTION_BUILDINGS + DISTRICT_BUILDINGS
-    + WELLBEING_BUILDINGS + PATH_BUILDINGS + AUTOMATION_BUILDINGS
-    + DECORATION_BUILDINGS + FT_MONUMENT_BUILDINGS
-)
+from .Items import get_building_names
+
+ALL_BUILDING_NAMES: list[str] = get_building_names("Folktails")
 
 # ---------------------------------------------------------------------------
 # Milestone locations — triggered by in-game events, not science spending
@@ -202,30 +199,152 @@ ALL_MILESTONE_LOCATIONS: list[str] = (
 # ---------------------------------------------------------------------------
 # Resource milestone locations — triggered by global resource count thresholds.
 # IDs start at 9_710_000 (clear of the existing 9_700_000-9_700_018 block).
-# Goods and thresholds map to construction-material tiers for logic gating.
+# This list only assigns permanent IDs. Which milestones a player gets depends
+# on faction and the resource_milestone_set option (see the lists below).
 # Order is append-only; never reorder or delete once IDs are assigned.
 # ---------------------------------------------------------------------------
 RESOURCE_MILESTONE_LOC_BASE = 9_710_000
 
 RESOURCE_MILESTONE_LOCATIONS: list[str] = [
-    # T1 — always producible from day 1
+    # Original set (IDs 9_710_000 - 9_710_012)
     "Resource: Reach 500 Logs",
     "Resource: Reach 1000 Logs",
-    # T2 — requires Gear Workshop + Forester
     "Resource: Reach 500 Planks",
     "Resource: Reach 1000 Planks",
     "Resource: Reach 100 Gears",
     "Resource: Reach 250 Gears",
-    "Resource: Reach 500 Bread",
-    # T3 — requires Smelter + scrap source
+    "Resource: Reach 500 Bread",  # Folktails only: Iron Teeth cannot make Bread
     "Resource: Reach 100 Metal Blocks",
     "Resource: Reach 250 Metal Blocks",
-    # T4 — requires Wood Workshop (Treated Planks) or Scavenger Flag/Metalsmith (Scrap Metal)
     "Resource: Reach 100 Treated Planks",
     "Resource: Reach 250 Treated Planks",
     "Resource: Reach 100 Scrap Metal",
     "Resource: Reach 250 Scrap Metal",
+    # Iron Teeth replacement for 500 Bread
+    "Resource: Reach 500 Corn Rations",
+    # Shared, lite set
+    "Resource: Reach 100 Logs",
+    "Resource: Reach 250 Logs",
+    "Resource: Reach 50 Planks",
+    "Resource: Reach 100 Planks",
+    "Resource: Reach 10 Gears",
+    "Resource: Reach 25 Gears",
+    "Resource: Reach 50 Gears",
+    "Resource: Reach 10 Treated Planks",
+    "Resource: Reach 25 Treated Planks",
+    "Resource: Reach 50 Treated Planks",
+    "Resource: Reach 10 Metal Blocks",
+    "Resource: Reach 25 Metal Blocks",
+    "Resource: Reach 50 Metal Blocks",
+    "Resource: Reach 25 Scrap Metal",
+    "Resource: Reach 50 Scrap Metal",
+    # Shared, full set only
+    "Resource: Reach 10 Pine Resin",
+    "Resource: Reach 25 Pine Resin",
+    "Resource: Reach 50 Pine Resin",
+    "Resource: Reach 100 Water",
+    "Resource: Reach 250 Water",
+    "Resource: Reach 250 Berries",
+    "Resource: Reach 10 Extract",
+    "Resource: Reach 25 Extract",
+    "Resource: Reach 50 Extract",
+    "Resource: Reach 10 Explosives",
+    "Resource: Reach 25 Explosives",
+    # Folktails, lite set
+    "Resource: Reach 10 Bread",
+    "Resource: Reach 25 Bread",
+    "Resource: Reach 50 Bread",
+    # Folktails, full set only
+    "Resource: Reach 25 Paper",
+    "Resource: Reach 50 Paper",
+    "Resource: Reach 100 Paper",
+    "Resource: Reach 25 Grilled Potatoes",
+    "Resource: Reach 50 Grilled Potatoes",
+    "Resource: Reach 100 Grilled Potatoes",
+    "Resource: Reach 25 Cattail Crackers",
+    "Resource: Reach 50 Cattail Crackers",
+    "Resource: Reach 100 Cattail Crackers",
+    "Resource: Reach 10 Maple Pastries",
+    "Resource: Reach 25 Maple Pastries",
+    "Resource: Reach 50 Maple Pastries",
+    "Resource: Reach 10 Books",
+    "Resource: Reach 25 Books",
+    "Resource: Reach 10 Biofuel",
+    "Resource: Reach 25 Biofuel",
+    "Resource: Reach 50 Biofuel",
+    "Resource: Reach 10 Antidote",
+    "Resource: Reach 25 Antidote",
+    # Iron Teeth, lite set
+    "Resource: Reach 25 Corn Rations",
+    "Resource: Reach 50 Corn Rations",
+    "Resource: Reach 100 Corn Rations",
+    # Iron Teeth, full set only
+    "Resource: Reach 25 Fermented Cassava",
+    "Resource: Reach 50 Fermented Cassava",
+    "Resource: Reach 100 Fermented Cassava",
+    "Resource: Reach 10 Eggplant Rations",
+    "Resource: Reach 25 Eggplant Rations",
+    "Resource: Reach 50 Eggplant Rations",
+    "Resource: Reach 50 Fermented Soybean",
+    "Resource: Reach 50 Kohlrabi",
+    "Resource: Reach 100 Kohlrabi",
+    "Resource: Reach 50 Mangrove Fruit",
+    "Resource: Reach 100 Mangrove Fruit",
+    "Resource: Reach 10 Metal Parts",
+    "Resource: Reach 25 Metal Parts",
+    "Resource: Reach 50 Metal Parts",
+    "Resource: Reach 10 Coffee",
+    "Resource: Reach 25 Coffee",
+    "Resource: Reach 50 Coffee",
+    "Resource: Reach 10 Grease",
+    "Resource: Reach 25 Grease",
 ]
+
+# Milestone sets, split by faction like the Wonder locations.
+# Values match the resource_milestone_set option: 0 classic, 1 lite, 2 full.
+RESOURCE_MILESTONE_SET_CLASSIC = 0
+RESOURCE_MILESTONE_SET_LITE = 1
+RESOURCE_MILESTONE_SET_FULL = 2
+
+_CLASSIC_SHARED: list[str] = [
+    name for name in RESOURCE_MILESTONE_LOCATIONS[:13] if not name.endswith(" Bread")
+]
+_LITE_SHARED: list[str] = RESOURCE_MILESTONE_LOCATIONS[14:29]
+_FULL_SHARED: list[str] = RESOURCE_MILESTONE_LOCATIONS[29:40]
+_LITE_FT: list[str] = RESOURCE_MILESTONE_LOCATIONS[40:43]
+_FULL_FT: list[str] = RESOURCE_MILESTONE_LOCATIONS[43:62]
+_LITE_IT: list[str] = RESOURCE_MILESTONE_LOCATIONS[62:65]
+_FULL_IT: list[str] = RESOURCE_MILESTONE_LOCATIONS[65:84]
+
+_RESOURCE_SETS: dict[str, tuple[list[str], list[str], list[str]]] = {
+    # faction: (classic, lite additions, full additions)
+    "Folktails": (
+        _CLASSIC_SHARED + ["Resource: Reach 500 Bread"],
+        _LITE_SHARED + _LITE_FT,
+        _FULL_SHARED + _FULL_FT,
+    ),
+    "IronTeeth": (
+        _CLASSIC_SHARED + ["Resource: Reach 500 Corn Rations"],
+        _LITE_SHARED + _LITE_IT,
+        _FULL_SHARED + _FULL_IT,
+    ),
+}
+
+
+def get_resource_milestones(faction: str,
+                            milestone_set: int = RESOURCE_MILESTONE_SET_FULL) -> list[str]:
+    """Resource milestone locations for a faction and milestone set, in ID order."""
+    classic, lite, full = _RESOURCE_SETS[faction]
+    names = list(classic)
+    if milestone_set >= RESOURCE_MILESTONE_SET_LITE:
+        names += lite
+    if milestone_set >= RESOURCE_MILESTONE_SET_FULL:
+        names += full
+    return sorted(names, key=RESOURCE_MILESTONE_LOCATIONS.index)
+
+
+FT_RESOURCE_MILESTONE_LOCATIONS: list[str] = get_resource_milestones("Folktails")
+IT_RESOURCE_MILESTONE_LOCATIONS: list[str] = get_resource_milestones("IronTeeth")
 
 
 # ---------------------------------------------------------------------------
