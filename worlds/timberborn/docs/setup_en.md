@@ -2,32 +2,32 @@
 
 ## Required Software
 
-- [Timberborn](https://store.steampowered.com/app/1062090/Timberborn/) (experimental branch)
-- [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases) (latest release)
-- The Timberborn Archipelago mod (installed via Steam Workshop or mod.io)
+- [Timberborn](https://store.steampowered.com/app/1062090/Timberborn/) 1.1 or newer
+- [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases) 0.6.7 or newer
+- The Timberborn Archipelago mod, from the [mod releases](https://github.com/dowlle/timberborn-modding/releases)
 
 ## Installing the Mod
 
-1. Subscribe to the **Timberborn Archipelago** mod on Steam Workshop, or download the `.zip` from mod.io.
-2. Launch Timberborn. The mod should appear in the built-in Mod Manager — enable it.
+1. Download `Archipelago.zip` from the latest [mod release](https://github.com/dowlle/timberborn-modding/releases) and extract it into `Documents/Timberborn/Mods/`, so you end up with a `Mods/Archipelago/` folder. Replace any older version.
+2. Launch Timberborn. The mod should appear in the built-in Mod Manager; enable it.
 3. Restart the game after enabling.
 
 ## Connecting to the Server
 
 1. Start or load a game with the Archipelago mod enabled.
 2. Click the **AP** button in the bottom bar to open the AP Shop.
-3. Use the connection panel (bottom-right) to enter your server details:
-   - **Server**: hostname or IP (e.g. `archipelago.gg`)
+3. Enter your server details in the connection fields of the AP Shop:
+   - **Host**: hostname or IP (e.g. `archipelago.gg`, or `localhost` for a server on your own PC)
    - **Port**: your session's port number
-   - **Slot Name**: your player name from the YAML
+   - **Slot**: your player name from the YAML
    - **Password**: leave blank if not set
 4. Click **Connect**. The AP Shop will populate with your seed's layout.
-5. Connection data is saved automatically — the game will auto-reconnect on future loads.
+5. Connection data is saved with your game, and the mod reconnects when you load that save.
 
 ## Playing
 
 - The **AP Shop** has 4 branching paths (A, B, C, D). Each path has sequential locations with escalating science costs.
-- Buy locations in order within each path — you can freely switch between paths.
+- Buy locations in order within each path; you can freely switch between paths.
 - Higher-tier locations are gated by progression items (Gear Workshop, Scavenger Flag, etc.).
 - **Skip** items let you check a location without spending science.
 - **Milestones** (population, well-being, survival, wonder) trigger automatically as you play.
@@ -35,7 +35,7 @@
 
 ## Important: Faction Selection
 
-If you set `faction: iron_teeth` or `faction: random` in your YAML, make sure Iron Teeth is **unlocked in your game first** (requires reaching average well-being 8 in a Folktails game). The mod will block connection if you load the wrong faction.
+The mod unlocks both factions, so you can play Iron Teeth without unlocking it in a Folktails game first. Start your colony with the faction from your YAML: the mod blocks the connection if you load the wrong faction.
 
 ## YAML Configuration
 
@@ -45,7 +45,7 @@ Download the [template YAML](../player-settings) and configure your options:
 game: Timberborn
 name: YourName
 Timberborn:
-  faction: folktails               # folktails | iron_teeth | random (IT must be unlocked first!)
+  faction: folktails               # folktails | iron_teeth | random
   goal_selection:                   # pick any combination of victory conditions
     - Wonder
   goal_requirement: any             # any (complete one) | all (complete all)
