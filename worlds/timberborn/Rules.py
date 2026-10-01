@@ -299,6 +299,7 @@ class ShopCapacity:
         self.world = world
         self.slots_by_tier = slots_by_tier
         self._restricted: list[tuple[object, int]] | None = None
+        self._open_slots: dict[int, list] | None = None
 
     def restricted_items(self) -> list[tuple[object, int]]:
         if self._restricted is None:
@@ -310,6 +311,16 @@ class ShopCapacity:
             ]
         return self._restricted
 
+    def open_slots(self) -> dict[int, list]:
+        """Slots per tier that can hold a blueprint, so not excluded. Read on first
+        use, which is during fill, after Archipelago has applied exclude_locations."""
+        if self._open_slots is None:
+            self._open_slots = {
+                tier: [slot for slot in slots if slot.progress_type != LocationProgressType.EXCLUDED]
+                for tier, slots in self.slots_by_tier.items()
+            }
+        return self._open_slots
+
     def allows(self, item, slot_tier: int, location=None) -> bool:
         item_tier = item_placement_tier(item, self.world.multiworld)
         if item_tier > slot_tier:
@@ -320,13 +331,12 @@ class ShopCapacity:
         if item_tier == slot_tier or slot_tier <= 1:
             return True
         free = [0] * 7
-        for tier, slots in self.slots_by_tier.items():
-            free[tier] = sum(1 for slot in slots if slot.item is None
-                             and slot.progress_type != LocationProgressType.EXCLUDED)
+        for tier, slots in self.open_slots().items():
+            free[tier] = sum(1 for slot in slots if slot.item is None)
         progression_only = item.advancement and progress_type == LocationProgressType.PRIORITY
         need = [0] * 7
         for placed, tier in self.restricted_items():
-            if placed.location is None and (placed.advancement or not progression_only):
+            if placed.location is None and (not progression_only or placed.advancement):
                 need[tier] += 1
         free_at_least = need_at_least = 0
         for tier in range(5, max(item_tier, 1), -1):
