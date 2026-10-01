@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from Options import Choice, Range, Toggle, OptionSet, PerGameCommonOptions, Visibility
+from Options import (Choice, Range, Toggle, OptionSet, PerGameCommonOptions, StartInventoryPool,
+                     Visibility)
 
 
 class _ClampedRange(Range):
@@ -415,6 +416,7 @@ class LogicDifficulty(Choice):
 
 @dataclass
 class TimberbornOptions(PerGameCommonOptions):
+    start_inventory_from_pool: StartInventoryPool
     faction: Faction
     goal_selection: GoalSelection
     goal_requirement: GoalRequirement
