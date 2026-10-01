@@ -6,7 +6,7 @@ The [player settings page for this game](../player-settings) contains all the op
 
 ## What does randomization do to this game?
 
-Building blueprints that are normally unlocked through the Science system are shuffled into the multiworld item pool. An in-game **AP Shop** with 4 branching paths lets you spend Science Points to send checks to the server. Each path has sequential locations with escalating costs — you must buy them in order within each path, but can freely switch between paths.
+Building blueprints that are normally unlocked through the Science system are shuffled into the multiworld item pool. An in-game **AP Shop** with 4 branching paths lets you spend Science Points to send checks to the server. Each path has sequential locations with escalating costs. You must buy them in order within each path, but can freely switch between paths.
 
 Your colony must survive on whatever tech arrives from the multiworld while sending checks to unlock buildings for everyone else.
 
@@ -37,15 +37,15 @@ The survival milestones use it as 1st = early, 5 = mid, 10 = late. The Droughts 
 
 ## Which items can be in another player's world?
 
-- **Blueprints** — 126 individual building unlocks (e.g., *Forester*, *Gear Workshop*, *Smelter*). With Starting Blueprints on (default), Forester, Stairs and Platform are in your starting inventory instead and unlock as soon as you connect.
-- **Passive Boosts** — faster movement, increased carrying capacity, faster working speed, faster tree growth, longer life expectancy.
-- **Skip** — lets you check a shop location for free (bypasses science cost).
-- **Resource packages** — goods for your faction, such as *Package: Logs* (100 Logs) or *Package: Bread* (60 Bread). The Resource Package Size option scales every amount (10% to 1000%).
-- **Traps** *(optional)* — negative effects like *Hazardous Weather* (triggers an early drought or badtide) or *Hungry Beavers*. Include Traps turns them on or off. Trap Percentage (0 to 100, default 15) sets how many of the filler slots, the slots left after blueprints, boosts, scouts and skips, become traps instead of resource packages. The count is rounded half up; a default seed has 69 filler slots, so 15% gives 10 traps. Three weights (0 to 100) set how often each trap type appears: Hazardous Weather 50, Hungry Beavers 30 and Thirsty Beavers 20 by default. Each trap is drawn with a chance of its weight divided by the sum of the weights. A weight of 0 removes that trap type, and with all three at 0 there are no traps.
+- **Blueprints**: individual building unlocks, 132 for Folktails and 131 for Iron Teeth (e.g., *Forester*, *Gear Workshop*, *Smelter*). With Starting Blueprints on (default), Forester, Stairs and Platform are in your starting inventory instead and unlock as soon as you connect.
+- **Passive Boosts**: faster movement, increased carrying capacity, faster working speed, faster beaver growth, longer life expectancy, better woodcutting chance.
+- **Skip**: lets you check a shop location for free (bypasses science cost).
+- **Resource packages**: goods for your faction, such as *Package: Logs* (100 Logs) or *Package: Bread* (60 Bread). The Resource Package Size option scales every amount (10% to 1000%).
+- **Traps** *(optional)*: negative effects like *Hazardous Weather* (triggers an early drought or badtide) or *Hungry Beavers*. Include Traps turns them on or off. Trap Percentage (0 to 100, default 15) sets how many of the filler slots, the slots left after blueprints, boosts, scouts and skips, become traps instead of resource packages. The count is rounded half up; a default seed has 69 filler slots, so 15% gives 10 traps. Three weights (0 to 100) set how often each trap type appears: Hazardous Weather 50, Hungry Beavers 30 and Thirsty Beavers 20 by default. Each trap is drawn with a chance of its weight divided by the sum of the weights. A weight of 0 removes that trap type, and with all three at 0 there are no traps.
 
 ## What does another player's item look like in my game?
 
-The AP Shop presents abstract locations (e.g., "A-01", "B-05") with escalating science costs. Purchasing a location sends a check to the server — you don't know what item you'll send until you buy it. The shop is gated by 5 tiers that unlock as you receive key progression items (Gear Workshop, Scavenger Flag, Smelter, etc.). A blueprint is only placed in a shop slot of its own tier or higher, so a Smelter never sits in a tier 1 slot. A blueprint that a slot needs before it opens, such as the Smelter for tier 3, may sit one tier lower, and blueprints forced into the first sphere may sit in tier 1. A locked path shows what it still needs, such as the previous check, missing blueprints or more science, without revealing the item.
+The AP Shop presents abstract locations (e.g., "A-01", "B-05") with escalating science costs. Purchasing a location sends a check to the server; you don't know what item you'll send until you buy it. The shop is gated by 5 tiers that unlock as you receive key progression items (Gear Workshop, Scavenger Flag, Smelter, etc.). A blueprint is only placed in a shop slot of its own tier or higher, so a Smelter never sits in a tier 1 slot. A blueprint that a slot needs before it opens, such as the Smelter for tier 3, may sit one tier lower, and blueprints forced into the first sphere may sit in tier 1. A locked path shows what it still needs, such as the previous check, missing blueprints or more science, without revealing the item.
 
 Buildings that use Explosives or Extract (Dynamite, Tunnel, Detonator, banners, Memory, Agora, Detailer and others) also need a badwater source in logic: Badwater Pump for Folktails, Deep Badwater Pump and Metalsmith for Iron Teeth.
 
@@ -53,11 +53,11 @@ Buildings that use Explosives or Extract (Dynamite, Tunnel, Detonator, banners, 
 
 In addition to shop locations, milestone locations trigger automatically as you play:
 
-- **Population milestones** — first beaver born, first grown up, reaching 10/25/50/100/200 beavers
-- **Well-being milestones** — reaching well-being levels 5/10/15/20
-- **Survival milestones** — surviving 1st/5th/10th drought, 1st/5th/10th badtide, counted when each hazard ends
-- **Wonder milestone** — completing your faction's Wonder in this game
-- **Resource milestones** — reaching a stock of a good, such as 25 Gears or 500 Logs. Resource Milestone Set picks classic (13), lite (31) or full (61, default). Each is in logic once you have the buildings that produce the good.
+- **Population milestones**: first beaver born, first grown up, reaching 15/25/50/100/200 beavers
+- **Well-being milestones**: reaching well-being levels 5/10/15/20
+- **Survival milestones**: surviving 1st/5th/10th drought, 1st/5th/10th badtide, counted when each hazard ends
+- **Wonder milestone**: completing your faction's Wonder in this game
+- **Resource milestones**: reaching a stock of a good, such as 25 Gears or 500 Logs. Resource Milestone Set picks classic (13), lite (31) or full (61, default). Each is in logic once you have the buildings that produce the good.
 
 Each milestone type can be toggled on/off in the YAML settings.
 
