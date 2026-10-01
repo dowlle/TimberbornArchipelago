@@ -1,6 +1,6 @@
 import re
 
-from BaseClasses import CollectionState
+from BaseClasses import CollectionState, LocationProgressType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -279,6 +279,20 @@ class ShopCapacity:
     condition for nested sets, so the remaining blueprints can always be
     placed. It counts every unplaced blueprint as needing this shop, which is
     safe: a blueprint placed elsewhere only frees room.
+
+    Two kinds of slot are special, because Archipelago fills them in its own
+    order:
+    - Excluded slots never hold a blueprint: Archipelago fills them only with
+      filler, before the useful items are placed. They are not counted as
+      free room, and they take any item their tier allows. Counting them made
+      every excluded tier 2+ slot refuse all filler while useful blueprints
+      were still waiting, and generation failed.
+    - Priority slots are filled with progression first, while the useful
+      blueprints are still waiting. A progression item there only keeps room
+      for the progression blueprints. Useful blueprints still fit any
+      milestone, any other game's location or any shop slot of their tier. A
+      seed with no milestones and many late priority slots runs out of room
+      either way; it failed before this rule too, in the priority fill.
     """
 
     def __init__(self, world, slots_by_tier: dict[int, list]):
@@ -296,18 +310,23 @@ class ShopCapacity:
             ]
         return self._restricted
 
-    def allows(self, item, slot_tier: int) -> bool:
+    def allows(self, item, slot_tier: int, location=None) -> bool:
         item_tier = item_placement_tier(item, self.world.multiworld)
         if item_tier > slot_tier:
             return False
+        progress_type = getattr(location, "progress_type", LocationProgressType.DEFAULT)
+        if progress_type == LocationProgressType.EXCLUDED:
+            return True
         if item_tier == slot_tier or slot_tier <= 1:
             return True
         free = [0] * 7
         for tier, slots in self.slots_by_tier.items():
-            free[tier] = sum(1 for slot in slots if slot.item is None)
+            free[tier] = sum(1 for slot in slots if slot.item is None
+                             and slot.progress_type != LocationProgressType.EXCLUDED)
+        progression_only = item.advancement and progress_type == LocationProgressType.PRIORITY
         need = [0] * 7
         for placed, tier in self.restricted_items():
-            if placed.location is None:
+            if placed.location is None and (placed.advancement or not progression_only):
                 need[tier] += 1
         free_at_least = need_at_least = 0
         for tier in range(5, max(item_tier, 1), -1):
@@ -326,8 +345,8 @@ def _set_tier_placement_rules(world, player, mw) -> None:
     for entry in world.shop_layout:
         loc = mw.get_location(entry["location_name"], player)
         original = loc.item_rule
-        loc.item_rule = lambda item, t=entry["tier"], orig=original, c=capacity: (
-            c.allows(item, t) and orig(item)
+        loc.item_rule = lambda item, t=entry["tier"], orig=original, c=capacity, l=loc: (
+            c.allows(item, t, l) and orig(item)
         )
 
 
